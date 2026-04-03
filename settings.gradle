@@ -1,0 +1,5 @@
+rootProject.name = 'BirBuketFlower'
+include 'common'
+include 'auth-service'
+include 'product-service'
+include 'gateway'

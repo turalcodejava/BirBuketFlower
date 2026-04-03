@@ -1,0 +1,21 @@
+services:
+  postgresdb:
+    image: postgres:15
+    container_name: birbuket_postgres
+    environment:
+      POSTGRES_USER: birbuket
+      POSTGRES_PASSWORD: arxideya464
+      POSTGRES_DB: birbuketdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - birbuket_network
+
+volumes:
+  postgres_data:
+
+networks:
+  birbuket_network:
+    driver: bridge
