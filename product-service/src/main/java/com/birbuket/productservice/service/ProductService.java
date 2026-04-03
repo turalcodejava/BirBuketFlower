@@ -1,16 +1,24 @@
 package com.birbuket.productservice.service;
 
 import com.birbuket.productservice.dto.category.*;
+import com.birbuket.productservice.dto.product.CreateProductRequest;
+import com.birbuket.productservice.dto.product.CreateProductResponse;
 import com.birbuket.productservice.exception.CategoryAlreadyExistsException;
 import com.birbuket.productservice.exception.CategoryNotFoundException;
+import com.birbuket.productservice.exception.ProductNameAlreadyExistsException;
 import com.birbuket.productservice.mapper.CategoryMapper;
+import com.birbuket.productservice.mapper.ProductMapper;
+import com.birbuket.productservice.models.Product;
 import com.birbuket.productservice.models.ProductCategory;
+import com.birbuket.productservice.models.ProductImage;
 import com.birbuket.productservice.repository.CategoryRepository;
-import jdk.jfr.Category;
+import com.birbuket.productservice.repository.ProductRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -20,16 +28,20 @@ public class ProductService {
     private final CategoryMapper categoryMapper;
     private final CategoryRepository categoryRepository;
     private final FileUploadService fileUploadService;
+    private final ProductMapper productMapper;
+    private final ProductRepository productRepository;
 
-    public CreateCategoryResponse createCategory(CreateCategoryRequest createCategoryRequest) throws IOException {
-        if (categoryRepository.existsByTitle(createCategoryRequest.getTitle())) {
-            throw new CategoryAlreadyExistsException("Category already exists with title" + createCategoryRequest.getTitle());
+
+    @Transactional
+    public CreateCategoryResponse createCategory(CreateCategoryRequest request) throws IOException {
+        if (categoryRepository.existsByTitle(request.getTitle())) {
+            throw new CategoryAlreadyExistsException("Category already exists with title" + request.getTitle());
         }
-        String imageUrl = fileUploadService.uploadFile(createCategoryRequest.getImage(), "categories");
+        String imageUrl = fileUploadService.uploadFile(request.getImage(), "categories");
 
         var category = ProductCategory.builder()
-                .title(createCategoryRequest.getTitle())
-                .subtitle(createCategoryRequest.getSubtitle())
+                .title(request.getTitle())
+                .subtitle(request.getSubtitle())
                 .imageUrl(imageUrl)
                 .build();
 
@@ -48,6 +60,8 @@ public class ProductService {
         return categoryMapper.toAllCategory(categories);
     }
 
+
+    @Transactional
     public UpdateCategoryResponse updateCategory(Long id, UpdateCategoryRequest request) throws IOException {
         ProductCategory category = categoryRepository.findById(id).orElseThrow(
                 () -> new CategoryNotFoundException("Category not found with id " + id)
@@ -61,5 +75,54 @@ public class ProductService {
         }
         var saved = categoryRepository.save(category);
         return categoryMapper.toUpdateCategoryResponse(saved);
+    }
+
+    public void deleteCategoryById(Long id) {
+        var category = categoryRepository.findById(id).orElseThrow(
+                () -> new CategoryNotFoundException("Category not found with id " + id));
+        categoryRepository.delete(category);
+    }
+
+    @Transactional
+    public CreateProductResponse createProduct(CreateProductRequest request) throws IOException {
+
+        if (productRepository.existsByProductName(request.getProductName())) {
+            throw new ProductNameAlreadyExistsException(
+                    "Product already exists with name " + request.getProductName());
+        }
+
+        var product = Product.builder()
+                .productName(request.getProductName())
+                .description(request.getDescription())
+                .composition(request.getComposition())
+                .discountPercentage(request.getDiscountPercentage())
+                .active(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .slug(request.getSlug())
+                .size(request.getSize())
+                .sku(request.getSku())
+                .build();
+
+        ProductCategory category = categoryRepository.findById(request.getProductCategoryId())
+                .orElseThrow(() -> new CategoryNotFoundException(
+                        "Category not found with id " + request.getProductCategoryId()));
+
+        product.setProductCategory(category);
+
+        List<String> imageUrls = fileUploadService.uploadMultipartFiles(request.getImages(), "product_image");
+
+        List<ProductImage> productImages = imageUrls.stream()
+                .map(url -> ProductImage.builder()
+                        .product(product)
+                        .imageUrl(url)
+                        .build())
+                .toList();
+
+        product.setImages(productImages);
+
+        var savedProduct = productRepository.save(product);
+
+        return productMapper.toProductResponse(savedProduct);
     }
 }

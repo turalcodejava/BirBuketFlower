@@ -1,5 +1,6 @@
 package com.birbuket.productservice.models;
 
+import com.birbuket.productservice.enums.ProductColor;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -25,16 +26,14 @@ public class ProductVariant {
     @NotNull(message = "Price boş ola bilməz")
     @Positive(message = "Price 0-dan böyük olmalıdır")
     @Column(nullable = false, precision = 10, scale = 2)
-    BigDecimal price;
+    private BigDecimal price;
 
-    @ManyToOne(fetch =  FetchType.LAZY)
-    @JoinColumn(name = "product_id",  nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(unique = true, length = 50, nullable = false)
-    String sku; // Mehsulun kodlasdirilmasi ucun
-
-    @ManyToOne(fetch =  FetchType.LAZY)
-    @JoinColumn(name = "colors_id",  nullable = false)
-    private Color color;
+    @NotNull(message = "Color boş ola bilməz")
+    @Enumerated(EnumType.STRING) // DB-də enum adı saxlanacaq
+    @Column(length = 20, nullable = false)
+    private ProductColor color;
 }

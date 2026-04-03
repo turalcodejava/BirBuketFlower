@@ -5,6 +5,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -18,7 +20,8 @@ public class FileUploadService {
             throw new RuntimeException("File boş ola bilməz");
         }
 
-        if (!file.getContentType().startsWith("image")) {
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image")) {
             throw new RuntimeException("Yalnız şəkil upload etmək olar");
         }
 
@@ -46,5 +49,18 @@ public class FileUploadService {
         }
 
         return fileName.substring(fileName.lastIndexOf(".") + 1);
+    }
+
+    public List<String> uploadMultipartFiles(MultipartFile[] files, String folder) throws IOException {
+        if (files == null || files.length == 0) {
+            return List.of();
+        }
+        List<String> urls = new ArrayList<>();
+        for (MultipartFile file : files) {
+            if (file != null && !file.isEmpty()) {
+                urls.add(uploadFile(file, folder));
+            }
+        }
+        return urls;
     }
 }

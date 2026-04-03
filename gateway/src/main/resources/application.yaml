@@ -3,6 +3,8 @@ spring:
     name: gateway
   main:
     web-application-type: reactive
+  codec:
+    max-in-memory-size: 15MB
   cloud:
     gateway:
       routes:
@@ -14,13 +16,11 @@ spring:
           filters:
             - StripPrefix=1   # /api/auth/xyz -> /auth/xyz
 
-          # Product Service ucun
+          # Product Service ucun (backend @RequestMapping("/api/product") — prefix silinməməlidir)
         - id: product-service
           uri: http://localhost:8082
           predicates:
             - Path=/api/product/**
-          filters:
-            - StripPrefix=1   # /api/product/xyz -> /product/xyz
 
 server:
   port: 8080

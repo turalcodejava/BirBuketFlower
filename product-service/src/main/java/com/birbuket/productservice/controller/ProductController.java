@@ -3,11 +3,12 @@ package com.birbuket.productservice.controller;
 
 import com.birbuket.common.dto.ApiResponse;
 import com.birbuket.productservice.dto.category.*;
-import com.birbuket.productservice.exception.CategoryNotFoundException;
+import com.birbuket.productservice.dto.product.CreateProductRequest;
+import com.birbuket.productservice.dto.product.CreateProductResponse;
 import com.birbuket.productservice.mapper.CategoryMapper;
-import com.birbuket.productservice.models.ProductCategory;
 import com.birbuket.productservice.repository.CategoryRepository;
 import com.birbuket.productservice.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,7 @@ public class ProductController {
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
 
-    @PostMapping(value = "/category", consumes = "multipart/form-data")
+    @PostMapping(value = "/category", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<CreateCategoryResponse>> createCategory(
             @Valid @ModelAttribute CreateCategoryRequest request) throws IOException {
         var response = productService.createCategory(request);
@@ -35,14 +36,14 @@ public class ProductController {
 
     @GetMapping("/category/{id}")
     public ResponseEntity<ApiResponse<CategoryByIdResponse>> getCategoryById(
-            @PathVariable Long id){
+            @PathVariable Long id) {
         var response = productService.getCategoryById(id);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 
     @GetMapping("/category")
-    public ResponseEntity<ApiResponse<List<CategoryByIdResponse>>> getAllCategories(){
-        var response =  productService.getAllCategories();
+    public ResponseEntity<ApiResponse<List<CategoryByIdResponse>>> getAllCategories() {
+        var response = productService.getAllCategories();
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 
@@ -50,7 +51,25 @@ public class ProductController {
     public ResponseEntity<ApiResponse<UpdateCategoryResponse>> updateCategory(
             @PathVariable Long id,
             @ModelAttribute UpdateCategoryRequest request) throws IOException {
-        var response = productService.updateCategory(id,request);
+        var response = productService.updateCategory(id, request);
+        return ResponseEntity.ok().body(ApiResponse.success(response));
+    }
+
+    @DeleteMapping("category/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteCategory(
+            @PathVariable Long id) {
+        productService.deleteCategoryById(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @Operation(
+            summary = "Məhsul yarat",
+            description = "Tək multipart/form-data: məhsul sahələri + images (fayl, bir neçə eyni adla)"
+    )
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<CreateProductResponse>> createProduct(
+            @Valid @ModelAttribute CreateProductRequest request) throws IOException {
+        var response = productService.createProduct(request);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 }

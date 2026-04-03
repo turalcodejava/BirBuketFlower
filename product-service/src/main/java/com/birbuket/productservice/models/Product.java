@@ -1,5 +1,6 @@
 package com.birbuket.productservice.models;
 
+import com.birbuket.productservice.enums.ProductSize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -71,15 +72,15 @@ public class Product {
 
     @Size(max = 50)
     @Column(length = 50)
-    String size;  // Mehsulun olcusu
+    List<ProductSize> size;  // Mehsulun olcusu
+
+    @Column(unique = true, length = 50, nullable = false)
+    private String sku; // Məhsulun kodlaşdırılması üçün
+
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "product", orphanRemoval = true)
     @Builder.Default
     List<ProductImage> images = new ArrayList<>();
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    List<ProductSize> productSizes = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_category_id")

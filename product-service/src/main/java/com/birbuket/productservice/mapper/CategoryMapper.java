@@ -1,13 +1,11 @@
 package com.birbuket.productservice.mapper;
 
-import com.birbuket.common.dto.ApiResponse;
 import com.birbuket.productservice.dto.category.CategoryByIdResponse;
 import com.birbuket.productservice.dto.category.CreateCategoryRequest;
 import com.birbuket.productservice.dto.category.CreateCategoryResponse;
 import com.birbuket.productservice.dto.category.UpdateCategoryResponse;
 import com.birbuket.productservice.models.ProductCategory;
 import org.mapstruct.Mapper;
-import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
