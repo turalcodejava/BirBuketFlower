@@ -1,6 +1,5 @@
 package com.birbuket.authservice.service.impl;
 
-
 import com.birbuket.authservice.dto.UserLoginRequest;
 import com.birbuket.authservice.dto.UserLoginResponse;
 import com.birbuket.authservice.dto.UserRegisterRequest;
@@ -10,16 +9,16 @@ import com.birbuket.authservice.enums.UserStatus;
 import com.birbuket.authservice.exception.PasswordMismatchException;
 import com.birbuket.authservice.exception.UnderageUserException;
 import com.birbuket.authservice.exception.UserAlreadyExistsException;
-import com.birbuket.authservice.exception.UserNotFoundException;
 import com.birbuket.authservice.mapper.UserMapper;
-import com.birbuket.authservice.models.RefreshToken;
 import com.birbuket.authservice.repository.UserRepository;
+import com.birbuket.authservice.security.AuthJwtService;
 import com.birbuket.authservice.service.AuthService;
-import com.birbuket.authservice.service.RefreshTokenService;
-import com.birbuket.common.security.JwtService;
-import jakarta.transaction.Transactional;
+import com.birbuket.common.enums.ErrorCode;
+import com.birbuket.common.exception.BaseException;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -34,9 +33,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
-    private final RefreshTokenService refreshTokenService;
-
+    private final AuthJwtService authJwtService;
     @Override
     @Transactional
     public UserRegisterResponse register(UserRegisterRequest request) {
@@ -45,9 +42,9 @@ public class AuthServiceImpl implements AuthService {
         checkUserExists(request);
         checkUnderage(request.getBirthDate());
         var user = userMapper.toUserEntity(request);
-        user.setRole(Role.USER);
-        user.setStatus(UserStatus.PENDING);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(Role.USER);
+        user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
         log.info("User registered successfully: {}", user.getUsername());
 
@@ -55,45 +52,33 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public UserLoginResponse login(UserLoginRequest request) {
-        log.info("Attempting login for user: {}", request.getUsername());
-
         var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> {
-                    log.warn("User not found: {}", request.getUsername());
-                    return new UserNotFoundException("User not found with username: " + request.getUsername());
-                });
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.warn("Password mismatch for user: {}", request.getUsername());
-            throw new PasswordMismatchException("Password mismatch");
+                .orElseThrow(() -> new BaseException(
+                        "İstifadəçi tapılmadı",
+                        HttpStatus.UNAUTHORIZED,
+                        ErrorCode.UNAUTHORIZED));
+
+        if (!UserStatus.ACTIVE.equals(user.getStatus())) {
+            throw new BaseException(
+                    "Hesab aktiv deyil",
+                    HttpStatus.FORBIDDEN,
+                    ErrorCode.USER_IS_NOT_ACTIVE);
         }
 
-        String accessToken = jwtService.generateToken(user);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
-        log.info("User logged in successfully: {}", user.getUsername());
-        return UserLoginResponse.builder()
-                .username(user.getUsername())
-                .accessToken(accessToken)
-                .refreshToken(refreshToken.getToken())
-                .role(Role.USER)
-                .build();
-    }
-
-    @Override
-    @Transactional
-    public UserLoginResponse refresh(String refreshToken) {
-        var verified = refreshTokenService.verifyRefreshToken(refreshToken);
-
-        var user = verified.getUser();
-        var newAccessToken = jwtService.generateToken(user);
-        var newRefreshToken = refreshTokenService.createRefreshToken(user);
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BaseException(
+                    "İstifadəçi adı və ya şifrə yanlışdır",
+                    HttpStatus.UNAUTHORIZED,
+                    ErrorCode.UNAUTHORIZED);
+        }
 
         return UserLoginResponse.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken.getToken())
                 .username(user.getUsername())
                 .role(user.getRole())
+                .accessToken(authJwtService.generateAccessToken(user))
+                .refreshToken(authJwtService.generateRefreshToken(user))
                 .build();
     }
 
@@ -107,11 +92,9 @@ public class AuthServiceImpl implements AuthService {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new UserAlreadyExistsException("Username already exists");
         }
-
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new UserAlreadyExistsException("Email already exists");
         }
-
         if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
             throw new UserAlreadyExistsException("Phone number already exists");
         }

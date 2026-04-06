@@ -13,9 +13,9 @@ import com.birbuket.productservice.models.ProductCategory;
 import com.birbuket.productservice.models.ProductImage;
 import com.birbuket.productservice.repository.CategoryRepository;
 import com.birbuket.productservice.repository.ProductRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -48,6 +48,7 @@ public class ProductService {
         return categoryMapper.toCreateCategoryResponse(categoryRepository.save(category));
     }
 
+    @Transactional(readOnly = true)
     public CategoryByIdResponse getCategoryById(Long id) {
         var category = categoryRepository.findById(id)
                 .orElseThrow(
@@ -55,6 +56,7 @@ public class ProductService {
         return categoryMapper.toCategoryById(category);
     }
 
+    @Transactional(readOnly = true)
     public List<CategoryByIdResponse> getAllCategories() {
         var categories = categoryRepository.findAll();
         return categoryMapper.toAllCategory(categories);
@@ -77,6 +79,7 @@ public class ProductService {
         return categoryMapper.toUpdateCategoryResponse(saved);
     }
 
+    @Transactional
     public void deleteCategoryById(Long id) {
         var category = categoryRepository.findById(id).orElseThrow(
                 () -> new CategoryNotFoundException("Category not found with id " + id));
@@ -96,7 +99,6 @@ public class ProductService {
                 .description(request.getDescription())
                 .composition(request.getComposition())
                 .discountPercentage(request.getDiscountPercentage())
-                .active(true)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .slug(request.getSlug())

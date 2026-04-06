@@ -55,10 +55,6 @@ public class CreateProductRequest {
     @Column(unique = true, length = 50, nullable = false)
     private String sku; // Məhsulun kodlaşdırılması üçün
 
-    /**
-     * Eyni multipart sorğusunda mətn sahələri ilə birlikdə göndərilir.
-     * Postman/Swagger: form-data — adı {@code images}, tip File (bir neçə sətir eyni adla).
-     */
     @ArraySchema(
             arraySchema = @Schema(description = "Məhsul şəkilləri"),
             schema = @Schema(type = "string", format = "binary")

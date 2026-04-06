@@ -1,11 +1,13 @@
 spring:
   application:
     name: auth-service
+
   datasource:
     url: jdbc:postgresql://localhost:5432/auth_db
     username: birbuket
     password: arxideya464
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -15,10 +17,19 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-jwt:
-  secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
-  expiration: 3600000
-  refresh-expiration: 86400000
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: auth-service
+            client-secret: <client-secret>
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid, profile, email
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/birbuket-realm
 
 server:
-  port: 8081
+  port: 8082

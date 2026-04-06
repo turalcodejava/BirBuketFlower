@@ -21,12 +21,18 @@ spring:
           uri: http://localhost:8082
           predicates:
             - Path=/api/product/**
+  security:
+    oauth2:
+      client:
+        registration:
+          gateway-client:
+            client-id: gateway-client
+            client-secret: <secret>
+            authorization-grant-type: client_credentials
+            scope: openid
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/birbuket-realm
 
 server:
-  port: 8080
-
-
-jwt:
-  secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
-  expiration: 3600000
-  refresh-expiration: 86400000
+  port: 8081
