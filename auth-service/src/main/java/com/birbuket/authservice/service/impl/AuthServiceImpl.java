@@ -10,15 +10,14 @@ import com.birbuket.authservice.exception.PasswordMismatchException;
 import com.birbuket.authservice.exception.UnderageUserException;
 import com.birbuket.authservice.exception.UserAlreadyExistsException;
 import com.birbuket.authservice.mapper.UserMapper;
+import com.birbuket.authservice.models.UserEntity;
 import com.birbuket.authservice.repository.UserRepository;
-import com.birbuket.authservice.security.AuthJwtService;
 import com.birbuket.authservice.service.AuthService;
-import com.birbuket.common.enums.ErrorCode;
-import com.birbuket.common.exception.BaseException;
+import com.birbuket.authservice.service.KeycloakAdminService;
+import com.birbuket.authservice.service.KeycloakTokenService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +32,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-    private final AuthJwtService authJwtService;
+    private final KeycloakTokenService keycloakTokenService;
+    private final KeycloakAdminService keycloakAdminService;
     @Override
     @Transactional
     public UserRegisterResponse register(UserRegisterRequest request) {
@@ -45,40 +45,40 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
         user.setStatus(UserStatus.ACTIVE);
-        userRepository.save(user);
-        log.info("User registered successfully: {}", user.getUsername());
+        UserEntity saved = userRepository.save(user);
+        keycloakAdminService.provisionSkipReason().ifPresentOrElse(
+                reason -> log.warn(
+                        "Keycloak sinxronu ötürüldü: {}. Login üçün Keycloak-da user lazımdır (secret təyin edin və ya əl ilə user yaradın).",
+                        reason),
+                () -> keycloakAdminService.createUser(
+                        saved.getUsername(),
+                        saved.getEmail(),
+                        request.getName(),
+                        request.getSurname(),
+                        request.getPhoneNumber(),
+                        request.getPassword()));
+        log.info("User registered successfully: {}", saved.getUsername());
 
-        return userMapper.toUserRegisterResponse(user);
+        return userMapper.toUserRegisterResponse(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public UserLoginResponse login(UserLoginRequest request) {
-        var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BaseException(
-                        "İstifadəçi tapılmadı",
-                        HttpStatus.UNAUTHORIZED,
-                        ErrorCode.UNAUTHORIZED));
+        var tokens = keycloakTokenService.obtainPasswordGrant(
+                request.getUsername(),
+                request.getPassword());
 
-        if (!UserStatus.ACTIVE.equals(user.getStatus())) {
-            throw new BaseException(
-                    "Hesab aktiv deyil",
-                    HttpStatus.FORBIDDEN,
-                    ErrorCode.USER_IS_NOT_ACTIVE);
-        }
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BaseException(
-                    "İstifadəçi adı və ya şifrə yanlışdır",
-                    HttpStatus.UNAUTHORIZED,
-                    ErrorCode.UNAUTHORIZED);
-        }
+        Role role = userRepository.findByUsername(request.getUsername())
+                .filter(u -> UserStatus.ACTIVE.equals(u.getStatus()))
+                .map(UserEntity::getRole)
+                .orElse(Role.USER);
 
         return UserLoginResponse.builder()
-                .username(user.getUsername())
-                .role(user.getRole())
-                .accessToken(authJwtService.generateAccessToken(user))
-                .refreshToken(authJwtService.generateRefreshToken(user))
+                .username(request.getUsername())
+                .role(role)
+                .accessToken(tokens.accessToken())
+                .refreshToken(tokens.refreshToken())
                 .build();
     }
 

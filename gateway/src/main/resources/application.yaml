@@ -10,7 +10,7 @@ spring:
       routes:
           # Auth Service ucun
         - id: auth-service
-          uri: http://localhost:8081
+          uri: http://localhost:8082
           predicates:
             - Path=/api/auth/**
           filters:
@@ -18,7 +18,7 @@ spring:
 
           # Product Service ucun (backend @RequestMapping("/api/product") — prefix silinməməlidir)
         - id: product-service
-          uri: http://localhost:8082
+          uri: http://localhost:8083
           predicates:
             - Path=/api/product/**
   security:

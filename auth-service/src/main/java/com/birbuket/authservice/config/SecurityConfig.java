@@ -11,16 +11,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.beans.factory.annotation.Value;
-
-import io.jsonwebtoken.security.Keys;
-
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
+import org.springframework.web.client.RestTemplate;
 
 @Configuration
 @EnableWebSecurity
@@ -35,13 +27,9 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Login zamanı buraxılan JWT-ləri resource server eyni açarla yoxlayır (gateway ilə eyni secret istifadə et).
-     */
     @Bean
-    public JwtDecoder jwtDecoder(@Value("${jwt.secret}") String secret) {
-        SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 
     @Bean

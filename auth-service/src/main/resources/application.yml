@@ -1,6 +1,9 @@
 spring:
   application:
     name: auth-service
+  # İstəyə bağlı: application-local.yml faylında keycloak.client-secret (git-ə commit etmə)
+  config:
+    import: optional:classpath:application-local.yml
 
   datasource:
     url: jdbc:postgresql://localhost:5432/auth_db
@@ -19,17 +22,24 @@ spring:
 
   security:
     oauth2:
-      client:
-        registration:
-          keycloak:
-            client-id: auth-service
-            client-secret: <client-secret>
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope: openid, profile, email
-        provider:
-          keycloak:
-            issuer-uri: http://localhost:8080/realms/birbuket-realm
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/birbuket-realm
 
 server:
   port: 8082
+
+# Login: password grant — client-də "Direct access grants" aktiv olmalıdır.
+# Register: Admin API — ayrıca client (və ya eyni) service account + realm-management → manage-users
+keycloak:
+  server-url: http://localhost:8080
+  realm: birbuket-realm
+  client-id: auth-service
+  # Login üçün MÜTLƏQ lazımdır (confidential client): Keycloak → Clients → auth-service → Credentials
+  # Variant 1: mühit KEYCLOAK_CLIENT_SECRET
+  # Variant 2: src/main/resources/application-local.yml (nümunə: application-local.yml.example)
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:}
+  register-sync-enabled: true
+  # Boşdursa yuxarıdakı client-id/secret service account üçün də istifadə olunur
+  admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:}
+  admin-client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
