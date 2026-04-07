@@ -21,7 +21,7 @@ public class FileUploadService {
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image")) {
+        if (contentType != null && !contentType.startsWith("image") && !contentType.equals("application/octet-stream")) {
             throw new RuntimeException("Yalnız şəkil upload etmək olar");
         }
 

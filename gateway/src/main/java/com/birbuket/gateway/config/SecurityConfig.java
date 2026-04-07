@@ -16,12 +16,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers("/api/**").permitAll()
+                        .pathMatchers("/uploads/**").permitAll()
                         .pathMatchers("/error/**").permitAll()
                         .pathMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/swagger-ui/index.html")
+                                "/swagger-ui/index.html",
+                                "/webjars/**")
                         .permitAll()
                         .anyExchange().authenticated()
                 )

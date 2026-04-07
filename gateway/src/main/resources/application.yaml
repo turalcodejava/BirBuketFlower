@@ -21,6 +21,16 @@ spring:
           uri: http://localhost:8083
           predicates:
             - Path=/api/product/**
+          filters:
+            - name: RequestSize
+              args:
+                maxSize: 16MB
+
+        # Yüklənmiş şəkillər (məhsul cavabındakı /uploads/... URL-ləri)
+        - id: product-uploads
+          uri: http://localhost:8083
+          predicates:
+            - Path=/uploads/**
   security:
     oauth2:
       client:

@@ -16,9 +16,11 @@ import com.birbuket.productservice.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -87,7 +89,7 @@ public class ProductService {
     }
 
     @Transactional
-    public CreateProductResponse createProduct(CreateProductRequest request) throws IOException {
+    public CreateProductResponse createProduct(CreateProductRequest request, List<MultipartFile> images) throws IOException {
 
         if (productRepository.existsByProductName(request.getProductName())) {
             throw new ProductNameAlreadyExistsException(
@@ -99,6 +101,10 @@ public class ProductService {
                 .description(request.getDescription())
                 .composition(request.getComposition())
                 .discountPercentage(request.getDiscountPercentage())
+                .active(request.isActive())
+                .isSingle(request.isSingle())
+                .rating(request.getRating())
+                .reviewCount(request.getReviewCount())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .slug(request.getSlug())
@@ -112,7 +118,9 @@ public class ProductService {
 
         product.setProductCategory(category);
 
-        List<String> imageUrls = fileUploadService.uploadMultipartFiles(request.getImages(), "product_image");
+        List<MultipartFile> imageFiles = images != null ? images : Collections.emptyList();
+        List<String> imageUrls = fileUploadService.uploadMultipartFiles(
+                imageFiles.toArray(new MultipartFile[0]), "product_image");
 
         List<ProductImage> productImages = imageUrls.stream()
                 .map(url -> ProductImage.builder()

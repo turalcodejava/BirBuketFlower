@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -64,12 +65,13 @@ public class ProductController {
 
     @Operation(
             summary = "Məhsul yarat",
-            description = "Tək multipart/form-data: məhsul sahələri + images (fayl, bir neçə eyni adla)"
+            description = "multipart/form-data: məhsul sahələri (@ModelAttribute) + images (eyni adda bir neçə fayl: images)"
     )
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<CreateProductResponse>> createProduct(
-            @Valid @ModelAttribute CreateProductRequest request) throws IOException {
-        var response = productService.createProduct(request);
+            @Valid @ModelAttribute CreateProductRequest request,
+            @RequestParam(value = "images", required = false) List<MultipartFile> images) throws IOException {
+        var response = productService.createProduct(request, images);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 }
