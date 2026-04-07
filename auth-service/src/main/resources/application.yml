@@ -1,11 +1,16 @@
 spring:
   application:
     name: auth-service
+  # İstəyə bağlı: application-local.yml faylında keycloak.client-secret (git-ə commit etmə)
+  config:
+    import: optional:classpath:application-local.yml
+
   datasource:
     url: jdbc:postgresql://localhost:5432/auth_db
     username: birbuket
     password: arxideya464
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -15,10 +20,26 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-jwt:
-  secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
-  expiration: 3600000
-  refresh-expiration: 86400000
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/birbuket-realm
 
 server:
-  port: 8081
+  port: 8082
+
+# Login: password grant — client-də "Direct access grants" aktiv olmalıdır.
+# Register: Admin API — ayrıca client (və ya eyni) service account + realm-management → manage-users
+keycloak:
+  server-url: http://localhost:8080
+  realm: birbuket-realm
+  client-id: auth-service
+  # Login üçün MÜTLƏQ lazımdır (confidential client): Keycloak → Clients → auth-service → Credentials
+  # Variant 1: mühit KEYCLOAK_CLIENT_SECRET
+  # Variant 2: src/main/resources/application-local.yml (nümunə: application-local.yml.example)
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:}
+  register-sync-enabled: true
+  # Boşdursa yuxarıdakı client-id/secret service account üçün də istifadə olunur
+  admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:}
+  admin-client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}

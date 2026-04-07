@@ -1,0 +1,8 @@
+# Bu faylı application-local.yml adı ilə kopyalayın (eyni qovluqda).
+# application-local.yml .gitignore-da saxlanılır — repoya secret düşməsin.
+#
+# keycloak:
+#   client-secret: <Keycloak Admin → Clients → auth-service → Credentials → Client secret>
+
+keycloak:
+  client-secret: REPLACE_WITH_KEYCLOAK_CLIENT_SECRET

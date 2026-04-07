@@ -22,8 +22,8 @@ public class ProductImage {
     @NotBlank(message = "Image URL boş ola bilməz")
     @Size(max = 500)
     @Pattern(
-            regexp = "^(http|https)://.*$",
-            message = "Image URL düzgün formatda olmalıdır"
+            regexp = "^(https?://|/).+$",
+            message = "Image URL tam URL və ya /uploads/... kimi relative yol olmalıdır"
     )
     @Column(name = "image_url", nullable = false, length = 500)
     String imageUrl;

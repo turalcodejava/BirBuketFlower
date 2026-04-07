@@ -1,12 +1,13 @@
 package com.birbuket.productservice.dto.product;
 
 import com.birbuket.productservice.enums.ProductSize;
-import jakarta.persistence.Column;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Data
 public class CreateProductResponse {
     private Long id;
     private String productName;
@@ -18,7 +19,6 @@ public class CreateProductResponse {
     private BigDecimal rating;
     private Integer reviewCount;
     private String slug;
-    private String size;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String sku;

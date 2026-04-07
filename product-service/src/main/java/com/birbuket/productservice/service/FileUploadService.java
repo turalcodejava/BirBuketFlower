@@ -21,7 +21,7 @@ public class FileUploadService {
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image")) {
+        if (contentType != null && !contentType.startsWith("image") && !contentType.equals("application/octet-stream")) {
             throw new RuntimeException("Yalnız şəkil upload etmək olar");
         }
 
@@ -52,9 +52,6 @@ public class FileUploadService {
     }
 
     public List<String> uploadMultipartFiles(MultipartFile[] files, String folder) throws IOException {
-        if (files == null || files.length == 0) {
-            return List.of();
-        }
         List<String> urls = new ArrayList<>();
         for (MultipartFile file : files) {
             if (file != null && !file.isEmpty()) {

@@ -28,8 +28,10 @@ public class SecurityConfig {
                                         "/v3/api-docs/**",
                                         "/swagger-ui/**",
                                         "/swagger-ui.html",
-                                        "/swagger-ui/index.html"
+                                        "/swagger-ui/index.html",
+                                        "/webjars/**"
                                 ).permitAll()
+                                .requestMatchers("/uploads/**").permitAll()
                                 .requestMatchers("/api/product/category/**").permitAll() //sonra deyismeli
                                 .requestMatchers(HttpMethod.POST, "/api/product").permitAll()
                                 .anyRequest().authenticated()

@@ -1,7 +1,6 @@
 package com.birbuket.productservice.dto.product;
 
 import com.birbuket.productservice.enums.ProductSize;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.*;
@@ -9,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -54,16 +52,6 @@ public class CreateProductRequest {
 
     @Column(unique = true, length = 50, nullable = false)
     private String sku; // Məhsulun kodlaşdırılması üçün
-
-    /**
-     * Eyni multipart sorğusunda mətn sahələri ilə birlikdə göndərilir.
-     * Postman/Swagger: form-data — adı {@code images}, tip File (bir neçə sətir eyni adla).
-     */
-    @ArraySchema(
-            arraySchema = @Schema(description = "Məhsul şəkilləri"),
-            schema = @Schema(type = "string", format = "binary")
-    )
-    private MultipartFile[] images;
 
     private List<ProductVariantRequest> productVariants;
 

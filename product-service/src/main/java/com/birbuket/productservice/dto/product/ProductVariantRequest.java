@@ -14,8 +14,8 @@ public class ProductVariantRequest {
     @Positive(message = "Price 0-dan böyük olmalıdır")
     private BigDecimal price;  // Məhsulun qiyməti
 
-    @NotNull(message = "Product boş ola bilməz")
-    private Long productId;     // Hansı məhsula aid olduğu
+    /** Create zamanı boş ola bilər; saxlanandan sonra set olunur */
+    private Long productId;
 
     @NotNull(message = "Color boş ola bilməz")
     private ProductColor color; // Rəng enum ilə

@@ -10,7 +10,7 @@ spring:
       routes:
           # Auth Service ucun
         - id: auth-service
-          uri: http://localhost:8081
+          uri: http://localhost:8082
           predicates:
             - Path=/api/auth/**
           filters:
@@ -18,15 +18,31 @@ spring:
 
           # Product Service ucun (backend @RequestMapping("/api/product") — prefix silinməməlidir)
         - id: product-service
-          uri: http://localhost:8082
+          uri: http://localhost:8083
           predicates:
             - Path=/api/product/**
+          filters:
+            - name: RequestSize
+              args:
+                maxSize: 16MB
+
+        # Yüklənmiş şəkillər (məhsul cavabındakı /uploads/... URL-ləri)
+        - id: product-uploads
+          uri: http://localhost:8083
+          predicates:
+            - Path=/uploads/**
+  security:
+    oauth2:
+      client:
+        registration:
+          gateway-client:
+            client-id: gateway-client
+            client-secret: <secret>
+            authorization-grant-type: client_credentials
+            scope: openid
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/birbuket-realm
 
 server:
-  port: 8080
-
-
-jwt:
-  secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
-  expiration: 3600000
-  refresh-expiration: 86400000
+  port: 8081
