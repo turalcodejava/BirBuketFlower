@@ -110,8 +110,6 @@ public class ProductService {
 
         product.setProductCategory(category);
 
-        List<String> imageUrls = fileUploadService.uploadMultipartFiles(request.getImages(), "product_image");
-
         List<ProductImage> productImages = imageUrls.stream()
                 .map(url -> ProductImage.builder()
                         .product(product)
