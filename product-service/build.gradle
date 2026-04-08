@@ -9,6 +9,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation:3.2.3'
     implementation 'io.swagger.core.v3:swagger-annotations:2.2.46'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+    implementation platform('software.amazon.awssdk:bom:2.30.23')
+    implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:auth'
+    implementation 'software.amazon.awssdk:regions'
 
     implementation 'org.mapstruct:mapstruct:1.6.0.Beta1'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.0.Beta1'

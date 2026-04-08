@@ -1,22 +1,14 @@
 package com.birbuket.productservice.dto.product;
 
-import com.birbuket.productservice.enums.ProductSize;
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.math.BigDecimal;
 import java.util.List;
 
+
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CreateProductRequest {
+public class UpdateProductRequest {
 
     @NotBlank(message = "Product name boş ola bilməz")
     @Size(min = 2, max = 150)

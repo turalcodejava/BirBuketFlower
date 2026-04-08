@@ -1,16 +1,14 @@
 package com.birbuket.productservice.mapper;
 
-import com.birbuket.productservice.dto.product.CreateProductRequest;
-import com.birbuket.productservice.dto.product.CreateProductResponse;
-import com.birbuket.productservice.dto.product.ProductCategoryResponse;
-import com.birbuket.productservice.dto.product.ProductImageResponse;
-import com.birbuket.productservice.dto.product.ProductVariantResponse;
+import com.birbuket.productservice.dto.product.*;
 import com.birbuket.productservice.models.Product;
 import com.birbuket.productservice.models.ProductCategory;
 import com.birbuket.productservice.models.ProductImage;
 import com.birbuket.productservice.models.ProductVariant;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+
+import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
@@ -27,7 +25,6 @@ public interface ProductMapper {
     @Mapping(target = "productCategory", source = "productCategory")
     @Mapping(target = "images", source = "images")
     @Mapping(target = "productVariants", source = "productVariants")
-    @Mapping(target = "productSizes", source = "size")
     CreateProductResponse toProductResponse(Product product);
 
     ProductImageResponse toProductImageResponse(ProductImage image);
@@ -35,4 +32,8 @@ public interface ProductMapper {
     ProductVariantResponse toProductVariantResponse(ProductVariant variant);
 
     ProductCategoryResponse toProductCategoryResponse(ProductCategory category);
+
+    ProductByIdResponse toProductByIdResponse(Product product);
+
+    List<ProductByIdResponse> toALlProduct(List<Product> products);
 }

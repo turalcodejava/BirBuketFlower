@@ -44,17 +44,17 @@ public class Product {
     @PositiveOrZero(message = "Discount percentage mənfi ola bilməz")
     @Max(value = 100, message = "Discount 100%-dən böyük ola bilməz")
     @Column(name = "discount_percentage", precision = 5, scale = 2)
-    BigDecimal discountPercentage;  // Endirim faizi
+    BigDecimal discountPercentage = BigDecimal.ZERO;  // Endirim faizi
 
     @Column(nullable = false)
     boolean active = true;  // Mehsulun aktivliyi
 
     @CreationTimestamp
     @Column(updatable = false)
-    LocalDateTime createdAt;  // Yaranma tarixi
+    LocalDateTime createdAt = LocalDateTime.now();  // Yaranma tarixi
 
     @UpdateTimestamp
-    LocalDateTime updatedAt;
+    LocalDateTime updatedAt = LocalDateTime.now();
 
     @Column(name = "is_single")
     boolean isSingle = false;
@@ -70,17 +70,12 @@ public class Product {
     @Column(unique = true, length = 200, nullable = false)
     String slug; // SEO ve URL ucun ad
 
-    @Size(max = 50)
-    @Column(length = 50)
-    List<ProductSize> size;  // Mehsulun olcusu
-
     @Column(unique = true, length = 50, nullable = false)
     private String sku; // Məhsulun kodlaşdırılması üçün
 
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "product", orphanRemoval = true)
-    @Builder.Default
-    List<ProductImage> images = new ArrayList<>();
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    private List<ProductImage> images;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_category_id")

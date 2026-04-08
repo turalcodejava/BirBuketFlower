@@ -3,22 +3,30 @@ package com.birbuket.productservice.service;
 import com.birbuket.productservice.dto.category.*;
 import com.birbuket.productservice.dto.product.CreateProductRequest;
 import com.birbuket.productservice.dto.product.CreateProductResponse;
+import com.birbuket.productservice.dto.product.ProductByIdResponse;
+import com.birbuket.productservice.dto.product.ViewAllProducts;
 import com.birbuket.productservice.exception.CategoryAlreadyExistsException;
 import com.birbuket.productservice.exception.CategoryNotFoundException;
 import com.birbuket.productservice.exception.ProductNameAlreadyExistsException;
+import com.birbuket.productservice.exception.ProductNotFoundException;
 import com.birbuket.productservice.mapper.CategoryMapper;
 import com.birbuket.productservice.mapper.ProductMapper;
 import com.birbuket.productservice.models.Product;
 import com.birbuket.productservice.models.ProductCategory;
 import com.birbuket.productservice.models.ProductImage;
+import com.birbuket.productservice.models.ProductVariant;
 import com.birbuket.productservice.repository.CategoryRepository;
 import com.birbuket.productservice.repository.ProductRepository;
-import jakarta.transaction.Transactional;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -37,7 +45,10 @@ public class ProductService {
         if (categoryRepository.existsByTitle(request.getTitle())) {
             throw new CategoryAlreadyExistsException("Category already exists with title" + request.getTitle());
         }
-        String imageUrl = fileUploadService.uploadFile(request.getImage(), "categories");
+        String imageUrl = null;
+        if (request.getImage() != null && !request.getImage().isEmpty()) {
+            imageUrl = fileUploadService.uploadFile(request.getImage(), "categories");
+        }
 
         var category = ProductCategory.builder()
                 .title(request.getTitle())
@@ -48,6 +59,7 @@ public class ProductService {
         return categoryMapper.toCreateCategoryResponse(categoryRepository.save(category));
     }
 
+    @Transactional(readOnly = true)
     public CategoryByIdResponse getCategoryById(Long id) {
         var category = categoryRepository.findById(id)
                 .orElseThrow(
@@ -55,6 +67,7 @@ public class ProductService {
         return categoryMapper.toCategoryById(category);
     }
 
+    @Transactional(readOnly = true)
     public List<CategoryByIdResponse> getAllCategories() {
         var categories = categoryRepository.findAll();
         return categoryMapper.toAllCategory(categories);
@@ -77,6 +90,7 @@ public class ProductService {
         return categoryMapper.toUpdateCategoryResponse(saved);
     }
 
+    @Transactional
     public void deleteCategoryById(Long id) {
         var category = categoryRepository.findById(id).orElseThrow(
                 () -> new CategoryNotFoundException("Category not found with id " + id));
@@ -84,7 +98,7 @@ public class ProductService {
     }
 
     @Transactional
-    public CreateProductResponse createProduct(CreateProductRequest request) throws IOException {
+    public CreateProductResponse createProduct(CreateProductRequest request, List<MultipartFile> images) throws IOException {
 
         if (productRepository.existsByProductName(request.getProductName())) {
             throw new ProductNameAlreadyExistsException(
@@ -95,22 +109,35 @@ public class ProductService {
                 .productName(request.getProductName())
                 .description(request.getDescription())
                 .composition(request.getComposition())
-                .discountPercentage(request.getDiscountPercentage())
-                .active(true)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .slug(request.getSlug())
-                .size(request.getSize())
                 .sku(request.getSku())
                 .build();
 
-        ProductCategory category = categoryRepository.findById(request.getProductCategoryId())
+        Long categoryId = request.getProductCategoryId();
+        if (categoryId == null) {
+            throw new IllegalArgumentException("Product category id must not be null");
+        }
+
+        ProductCategory category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException(
-                        "Category not found with id " + request.getProductCategoryId()));
+                        "Category not found with id " + categoryId));
 
         product.setProductCategory(category);
 
-        List<String> imageUrls = fileUploadService.uploadMultipartFiles(request.getImages(), "product_image");
+        if (request.getProductVariants() != null && !request.getProductVariants().isEmpty()) {
+            List<ProductVariant> variants = request.getProductVariants().stream()
+                    .map(variantRequest -> ProductVariant.builder()
+                            .price(variantRequest.getPrice())
+                            .size(variantRequest.getSize())
+                            .color(variantRequest.getColor())
+                            .product(product)
+                            .build())
+                    .toList();
+            product.setProductVariants(new ArrayList<>(variants));
+        }
+
+        List<MultipartFile> imageFiles = images != null ? images : Collections.emptyList();
+        List<String> imageUrls = fileUploadService.uploadMultipartFiles(imageFiles, "product_image");
 
         List<ProductImage> productImages = imageUrls.stream()
                 .map(url -> ProductImage.builder()
@@ -125,4 +152,29 @@ public class ProductService {
 
         return productMapper.toProductResponse(savedProduct);
     }
+
+
+    @Transactional(readOnly = true)
+    public ProductByIdResponse getProductById(Long id) {
+        var product = productRepository.findById(id).orElseThrow(
+                () -> new ProductNotFoundException("Product not found with id " + id));
+        return productMapper.toProductByIdResponse(product);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductByIdResponse> getViewAllProducts() {
+        var products = productRepository.findAll();
+        return productMapper.toALlProduct(products);
+    }
+
+    @Transactional
+    public void deleteProduct(Long id){
+        var product = productRepository.findById(id).orElseThrow(
+                ()-> new ProductNotFoundException("Product not found with id " + id)
+        );
+        productRepository.delete(product);
+    }
+
+    @Transactional
+    public UpdateCategoryResponse(Long id)
 }

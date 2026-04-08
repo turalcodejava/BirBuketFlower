@@ -31,9 +31,11 @@ public class SecurityConfig {
                                         "/swagger-ui/index.html",
                                         "/webjars/**"
                                 ).permitAll()
-                                .requestMatchers("/uploads/**").permitAll()
-                                .requestMatchers("/api/product/category/**").permitAll() //sonra deyismeli
-                                .requestMatchers(HttpMethod.POST, "/api/product").permitAll()
+                                .requestMatchers("/uploads/**").hasRole("ADMIN")
+                                .requestMatchers("/api/product/category/**").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.POST, "/api/product").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.GET, "/api/product/**").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.DELETE, "/api/product/**").hasRole("ADMIN")
                                 .anyRequest().authenticated()
                 );
 

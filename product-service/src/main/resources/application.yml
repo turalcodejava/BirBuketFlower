@@ -22,3 +22,18 @@ spring:
 
 server:
   port: 8083
+
+# Lokal şəkil URL-ləri: frontend başqa portdasa tam ünvan lazımdır (nisbi /uploads/ yalnız eyni origində işləyir)
+app:
+  upload:
+    dir: uploads
+  media:
+    public-base-url: http://localhost:${server.port}
+
+aws:
+  s3:
+    # Boş və ya your-bucket-name qalsa şəkillər lokal uploads/ qovluğuna yazılır
+    bucket-name: ${AWS_S3_BUCKET_NAME:}
+    region: ${AWS_S3_REGION:eu-north-1}
+    use-public-acl: false
+    enabled: ${AWS_S3_ENABLED:true}

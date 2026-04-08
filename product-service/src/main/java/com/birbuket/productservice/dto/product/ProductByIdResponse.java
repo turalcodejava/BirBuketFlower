@@ -1,12 +1,16 @@
 package com.birbuket.productservice.dto.product;
+
+import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
 @Data
-public class CreateProductResponse {
+@Builder
+public class ProductByIdResponse {
     private Long id;
     private String productName;
     private String description;

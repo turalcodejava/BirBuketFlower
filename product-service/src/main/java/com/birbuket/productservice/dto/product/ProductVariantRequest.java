@@ -1,21 +1,30 @@
 package com.birbuket.productservice.dto.product;
 
 import com.birbuket.productservice.enums.ProductColor;
-import jakarta.validation.constraints.NotBlank;
+import com.birbuket.productservice.enums.ProductSize;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProductVariantRequest {
 
     @NotNull(message = "Price boş ola bilməz")
     @Positive(message = "Price 0-dan böyük olmalıdır")
     private BigDecimal price;  // Məhsulun qiyməti
 
-    /** Create zamanı boş ola bilər; saxlanandan sonra set olunur */
-    private Long productId;
+    @NotNull(message = "Size boş ola bilməz")
+    private ProductSize size;  // Məhsulun ölçüsü
+
 
     @NotNull(message = "Color boş ola bilməz")
     private ProductColor color; // Rəng enum ilə

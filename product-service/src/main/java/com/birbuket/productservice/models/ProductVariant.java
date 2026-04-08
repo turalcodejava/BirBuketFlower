@@ -1,6 +1,7 @@
 package com.birbuket.productservice.models;
 
 import com.birbuket.productservice.enums.ProductColor;
+import com.birbuket.productservice.enums.ProductSize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -31,6 +32,11 @@ public class ProductVariant {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
+
+    @NotNull(message = "Size boş ola bilməz")
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
+    private ProductSize size;
 
     @NotNull(message = "Color boş ola bilməz")
     @Enumerated(EnumType.STRING) // DB-də enum adı saxlanacaq
