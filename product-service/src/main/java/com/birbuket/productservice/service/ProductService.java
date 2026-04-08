@@ -3,6 +3,7 @@ package com.birbuket.productservice.service;
 import com.birbuket.productservice.dto.category.*;
 import com.birbuket.productservice.dto.product.CreateProductRequest;
 import com.birbuket.productservice.dto.product.CreateProductResponse;
+import com.birbuket.productservice.dto.product.ProductVariantRequest;
 import com.birbuket.productservice.exception.CategoryAlreadyExistsException;
 import com.birbuket.productservice.exception.CategoryNotFoundException;
 import com.birbuket.productservice.exception.ProductNameAlreadyExistsException;
@@ -11,6 +12,7 @@ import com.birbuket.productservice.mapper.ProductMapper;
 import com.birbuket.productservice.models.Product;
 import com.birbuket.productservice.models.ProductCategory;
 import com.birbuket.productservice.models.ProductImage;
+import com.birbuket.productservice.models.ProductVariant;
 import com.birbuket.productservice.repository.CategoryRepository;
 import com.birbuket.productservice.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -89,50 +91,25 @@ public class ProductService {
     }
 
     @Transactional
-    public CreateProductResponse createProduct(CreateProductRequest request, List<MultipartFile> images) throws IOException {
+    public CreateProductResponse createProduct(
+            CreateProductRequest productRequest,
+            List<MultipartFile> images,
+            ProductVariantRequest variantRequest){
 
-        if (productRepository.existsByProductName(request.getProductName())) {
-            throw new ProductNameAlreadyExistsException(
-                    "Product already exists with name " + request.getProductName());
-        }
-
-        var product = Product.builder()
-                .productName(request.getProductName())
-                .description(request.getDescription())
-                .composition(request.getComposition())
-                .discountPercentage(request.getDiscountPercentage())
-                .active(request.isActive())
-                .isSingle(request.isSingle())
-                .rating(request.getRating())
-                .reviewCount(request.getReviewCount())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .slug(request.getSlug())
-                .size(request.getSize())
-                .sku(request.getSku())
+        Product product = Product.builder()
+                .size(productRequest.getSize())
+                .sku(productRequest.getSku())
+                .slug(productRequest.getSlug())
+                .composition(productRequest.getComposition())
+                .description(productRequest.getDescription())
+                .productName(productRequest.getProductName())
                 .build();
 
-        ProductCategory category = categoryRepository.findById(request.getProductCategoryId())
-                .orElseThrow(() -> new CategoryNotFoundException(
-                        "Category not found with id " + request.getProductCategoryId()));
 
-        product.setProductCategory(category);
 
-        List<MultipartFile> imageFiles = images != null ? images : Collections.emptyList();
-        List<String> imageUrls = fileUploadService.uploadMultipartFiles(
-                imageFiles.toArray(new MultipartFile[0]), "product_image");
 
-        List<ProductImage> productImages = imageUrls.stream()
-                .map(url -> ProductImage.builder()
-                        .product(product)
-                        .imageUrl(url)
-                        .build())
-                .toList();
 
-        product.setImages(productImages);
 
-        var savedProduct = productRepository.save(product);
 
-        return productMapper.toProductResponse(savedProduct);
     }
 }

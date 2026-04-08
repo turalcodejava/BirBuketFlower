@@ -53,11 +53,20 @@ public class FileUploadService {
 
     public List<String> uploadMultipartFiles(MultipartFile[] files, String folder) throws IOException {
         List<String> urls = new ArrayList<>();
+
         for (MultipartFile file : files) {
-            if (file != null && !file.isEmpty()) {
-                urls.add(uploadFile(file, folder));
-            }
+
+            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+            Path path = Paths.get("uploads/" + folder + "/" + fileName);
+
+            Files.createDirectories(path.getParent());
+
+            Files.copy(file.getInputStream(), path);
+
+            urls.add("/uploads/" + folder + "/" + fileName);
         }
+
         return urls;
     }
 }

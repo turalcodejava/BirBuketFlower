@@ -2,7 +2,7 @@ package com.birbuket.productservice.dto.product;
 
 import com.birbuket.productservice.enums.ProductSize;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.Column;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -50,9 +50,9 @@ public class CreateProductRequest {
     @Size(max = 50)
     private List<ProductSize> size;  // Məhsulun ölçüsü
 
-    @Column(unique = true, length = 50, nullable = false)
     private String sku; // Məhsulun kodlaşdırılması üçün
 
+    @Valid
     private List<ProductVariantRequest> productVariants;
 
     @NotNull(message = "Product category boş ola bilməz")
