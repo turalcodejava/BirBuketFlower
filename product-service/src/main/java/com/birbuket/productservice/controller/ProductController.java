@@ -6,6 +6,7 @@ import com.birbuket.productservice.dto.category.*;
 import com.birbuket.productservice.dto.product.*;
 import com.birbuket.productservice.dto.product.variants.CreateVariantsRequest;
 import com.birbuket.productservice.dto.product.variants.CreateVariantsResponse;
+import com.birbuket.productservice.dto.product.variants.VariantSearchById;
 import com.birbuket.productservice.mapper.CategoryMapper;
 import com.birbuket.productservice.repository.CategoryRepository;
 import com.birbuket.productservice.service.ProductService;
@@ -154,4 +155,12 @@ public class ProductController {
         var response = productService.createVariants(id, request);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
+
+   @GetMapping("/variant/{id}")
+   @Operation(summary = "Id-ye gore variant axtarisi")
+   public ResponseEntity<ApiResponse<VariantSearchById>> getVariantById(
+           @PathVariable Long id){
+        var response = productService.getVariantById(id);
+        return ResponseEntity.ok().body(ApiResponse.success(response));
+   }
 }

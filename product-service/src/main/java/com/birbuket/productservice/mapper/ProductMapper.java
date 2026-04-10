@@ -5,6 +5,7 @@ import com.birbuket.productservice.dto.product.*;
 import com.birbuket.productservice.dto.product.images.ProductImageResponse;
 import com.birbuket.productservice.dto.product.variants.CreateVariantsResponse;
 import com.birbuket.productservice.dto.product.variants.ProductVariantResponse;
+import com.birbuket.productservice.dto.product.variants.VariantSearchById;
 import com.birbuket.productservice.models.Product;
 import com.birbuket.productservice.models.ProductCategory;
 import com.birbuket.productservice.models.ProductImage;
@@ -45,4 +46,7 @@ public interface ProductMapper {
 
     @Mapping(target = "productId", source = "product.id")
     CreateVariantsResponse toCreateVariantsResponse(ProductVariant savedVariant);
+
+    @Mapping(target = "productId", source = "product.id")
+    VariantSearchById toVariantSeachById(ProductVariant variant);
 }

@@ -4,10 +4,8 @@ import com.birbuket.productservice.dto.category.*;
 import com.birbuket.productservice.dto.product.*;
 import com.birbuket.productservice.dto.product.variants.CreateVariantsRequest;
 import com.birbuket.productservice.dto.product.variants.CreateVariantsResponse;
-import com.birbuket.productservice.exception.CategoryAlreadyExistsException;
-import com.birbuket.productservice.exception.CategoryNotFoundException;
-import com.birbuket.productservice.exception.ProductNameAlreadyExistsException;
-import com.birbuket.productservice.exception.ProductNotFoundException;
+import com.birbuket.productservice.dto.product.variants.VariantSearchById;
+import com.birbuket.productservice.exception.*;
 import com.birbuket.productservice.mapper.CategoryMapper;
 import com.birbuket.productservice.mapper.ProductMapper;
 import com.birbuket.productservice.models.Product;
@@ -218,5 +216,13 @@ public class ProductService {
         var savedVariant = productVariantRepository.save(variant);
 
         return productMapper.toCreateVariantsResponse(savedVariant);
+    }
+
+    @Transactional(readOnly = true)
+    public VariantSearchById getVariantById(Long id){
+        var variant = productVariantRepository.findById(id).orElseThrow(
+                ()-> new VariantsNotFoundException("Variants  not found with id " + id)
+        );
+        return productMapper.toVariantSeachById(variant);
     }
 }
