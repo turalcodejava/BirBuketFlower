@@ -1,5 +1,8 @@
 package com.birbuket.productservice.dto.product;
 
+import com.birbuket.productservice.dto.category.ProductCategoryResponse;
+import com.birbuket.productservice.dto.product.images.ProductImageResponse;
+import com.birbuket.productservice.dto.product.variants.ProductVariantResponse;
 import lombok.Builder;
 import lombok.Data;
 

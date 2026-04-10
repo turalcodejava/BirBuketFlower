@@ -1,4 +1,4 @@
-package com.birbuket.productservice.dto.product;
+package com.birbuket.productservice.dto.product.images;
 
 import lombok.Data;
 

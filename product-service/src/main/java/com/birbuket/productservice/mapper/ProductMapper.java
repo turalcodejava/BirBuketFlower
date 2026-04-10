@@ -1,6 +1,10 @@
 package com.birbuket.productservice.mapper;
 
+import com.birbuket.productservice.dto.category.ProductCategoryResponse;
 import com.birbuket.productservice.dto.product.*;
+import com.birbuket.productservice.dto.product.images.ProductImageResponse;
+import com.birbuket.productservice.dto.product.variants.CreateVariantsResponse;
+import com.birbuket.productservice.dto.product.variants.ProductVariantResponse;
 import com.birbuket.productservice.models.Product;
 import com.birbuket.productservice.models.ProductCategory;
 import com.birbuket.productservice.models.ProductImage;
@@ -36,4 +40,9 @@ public interface ProductMapper {
     ProductByIdResponse toProductByIdResponse(Product product);
 
     List<ProductByIdResponse> toALlProduct(List<Product> products);
+
+    UpdateProductResponse updateProductResponse(Product product);
+
+    @Mapping(target = "productId", source = "product.id")
+    CreateVariantsResponse toCreateVariantsResponse(ProductVariant savedVariant);
 }

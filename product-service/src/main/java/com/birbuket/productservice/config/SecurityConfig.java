@@ -31,11 +31,12 @@ public class SecurityConfig {
                                         "/swagger-ui/index.html",
                                         "/webjars/**"
                                 ).permitAll()
-                                .requestMatchers("/uploads/**").hasRole("ADMIN")
-                                .requestMatchers("/api/product/category/**").hasRole("ADMIN")
-                                .requestMatchers(HttpMethod.POST, "/api/product").hasRole("ADMIN")
-                                .requestMatchers(HttpMethod.GET, "/api/product/**").hasRole("ADMIN")
-                                .requestMatchers(HttpMethod.DELETE, "/api/product/**").hasRole("ADMIN")
+                                .requestMatchers("/uploads/**").permitAll()
+                                .requestMatchers("/api/product/category/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/product", "/api/product/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/product/**").permitAll()
+                                .requestMatchers(HttpMethod.DELETE, "/api/product/**").permitAll()
+                                .requestMatchers(HttpMethod.PATCH, "/api/product/**").permitAll()
                                 .anyRequest().authenticated()
                 );
 

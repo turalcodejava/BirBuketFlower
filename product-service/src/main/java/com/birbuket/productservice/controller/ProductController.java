@@ -3,10 +3,9 @@ package com.birbuket.productservice.controller;
 
 import com.birbuket.common.dto.ApiResponse;
 import com.birbuket.productservice.dto.category.*;
-import com.birbuket.productservice.dto.product.CreateProductRequest;
-import com.birbuket.productservice.dto.product.CreateProductResponse;
-import com.birbuket.productservice.dto.product.ProductByIdResponse;
-import com.birbuket.productservice.dto.product.ViewAllProducts;
+import com.birbuket.productservice.dto.product.*;
+import com.birbuket.productservice.dto.product.variants.CreateVariantsRequest;
+import com.birbuket.productservice.dto.product.variants.CreateVariantsResponse;
 import com.birbuket.productservice.mapper.CategoryMapper;
 import com.birbuket.productservice.repository.CategoryRepository;
 import com.birbuket.productservice.service.ProductService;
@@ -106,7 +105,7 @@ public class ProductController {
     @GetMapping({"{id}"})
     @Operation(summary = "Id-ye gore product axtar")
     public ResponseEntity<ApiResponse<ProductByIdResponse>> getProductById(
-            @PathVariable Long id){
+            @PathVariable Long id) {
         var response = productService.getProductById(id);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
@@ -121,8 +120,38 @@ public class ProductController {
     @DeleteMapping("{id}")
     @Operation(summary = "Id-ye gore product sil")
     public ResponseEntity<ApiResponse<Void>> deleteProduct(
-            @PathVariable Long id){
+            @PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok().body(ApiResponse.success(null));
+    }
+
+    @PatchMapping("{id}")
+    @Operation(summary = "Id-ye gore product update etmek")
+    public ResponseEntity<ApiResponse<UpdateProductResponse>> updateProduct(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateProductRequest request) {
+        var response = productService.updateProductResponse(id, request);
+        return ResponseEntity.ok().body(ApiResponse.success(response));
+    }
+
+    /**
+     * Məhsul ID-si URL-də: {@code POST /api/product/{productId}/variants}
+     */
+    @PostMapping("/{productId}/variants")
+    @Operation(summary = "Məhsula ayrıca variant əlavə et (product id path-də)")
+    public ResponseEntity<ApiResponse<CreateVariantsResponse>> createVariantForProduct(
+            @PathVariable Long productId,
+            @Valid @RequestBody CreateVariantsRequest request) {
+        var response = productService.createVariants(productId, request);
+        return ResponseEntity.ok().body(ApiResponse.success(response));
+    }
+
+    @PostMapping("/variant/{id}")
+    @Operation(summary = "Yeni variant (köhnə path: product id = {id})")
+    public ResponseEntity<ApiResponse<CreateVariantsResponse>> createVariant(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateVariantsRequest request) {
+        var response = productService.createVariants(id, request);
+        return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 }

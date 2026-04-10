@@ -1,4 +1,5 @@
 package com.birbuket.productservice.dto.product;
+
 import com.birbuket.productservice.dto.category.ProductCategoryResponse;
 import com.birbuket.productservice.dto.product.images.ProductImageResponse;
 import com.birbuket.productservice.dto.product.variants.ProductVariantResponse;
@@ -9,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class CreateProductResponse {
+public class UpdateProductResponse {
     private Long id;
     private String productName;
     private String description;

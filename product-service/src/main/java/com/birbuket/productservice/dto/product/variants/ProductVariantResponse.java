@@ -1,12 +1,10 @@
-package com.birbuket.productservice.dto.product;
+package com.birbuket.productservice.dto.product.variants;
 
 import com.birbuket.productservice.enums.ProductColor;
 import com.birbuket.productservice.enums.ProductSize;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
 public class ProductVariantResponse {

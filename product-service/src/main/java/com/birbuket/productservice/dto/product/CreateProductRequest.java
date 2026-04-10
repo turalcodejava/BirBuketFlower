@@ -1,7 +1,6 @@
 package com.birbuket.productservice.dto.product;
 
-import com.birbuket.productservice.enums.ProductSize;
-import io.swagger.v3.oas.annotations.media.Schema;
+import com.birbuket.productservice.dto.product.variants.ProductVariantRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;

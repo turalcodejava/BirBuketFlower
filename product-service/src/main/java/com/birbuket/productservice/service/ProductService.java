@@ -1,10 +1,9 @@
 package com.birbuket.productservice.service;
 
 import com.birbuket.productservice.dto.category.*;
-import com.birbuket.productservice.dto.product.CreateProductRequest;
-import com.birbuket.productservice.dto.product.CreateProductResponse;
-import com.birbuket.productservice.dto.product.ProductByIdResponse;
-import com.birbuket.productservice.dto.product.ViewAllProducts;
+import com.birbuket.productservice.dto.product.*;
+import com.birbuket.productservice.dto.product.variants.CreateVariantsRequest;
+import com.birbuket.productservice.dto.product.variants.CreateVariantsResponse;
 import com.birbuket.productservice.exception.CategoryAlreadyExistsException;
 import com.birbuket.productservice.exception.CategoryNotFoundException;
 import com.birbuket.productservice.exception.ProductNameAlreadyExistsException;
@@ -16,8 +15,9 @@ import com.birbuket.productservice.models.ProductCategory;
 import com.birbuket.productservice.models.ProductImage;
 import com.birbuket.productservice.models.ProductVariant;
 import com.birbuket.productservice.repository.CategoryRepository;
+import com.birbuket.productservice.repository.ProductImageRepository;
 import com.birbuket.productservice.repository.ProductRepository;
-import lombok.Getter;
+import com.birbuket.productservice.repository.ProductVariantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +38,8 @@ public class ProductService {
     private final FileUploadService fileUploadService;
     private final ProductMapper productMapper;
     private final ProductRepository productRepository;
+    private final ProductImageRepository productImageRepository;
+    private final ProductVariantRepository productVariantRepository;
 
 
     @Transactional
@@ -176,5 +178,45 @@ public class ProductService {
     }
 
     @Transactional
-    public UpdateCategoryResponse(Long id)
+    public UpdateProductResponse updateProductResponse(Long id, UpdateProductRequest request){
+        var product = productRepository.findById(id).orElseThrow(
+                ()-> new ProductNotFoundException("Product not found with id" + id)
+        );
+
+        product.setProductName(request.getProductName());
+        product.setDescription(request.getDescription());
+        product.setComposition(request.getComposition());
+        product.setSlug(request.getSlug());
+        product.setSku(request.getSku());
+        product.setUpdatedAt(LocalDateTime.now());
+
+        Long categoryId = request.getProductCategoryId();
+        if (categoryId != null) {
+            ProductCategory category = categoryRepository.findById(categoryId).orElseThrow(
+                    () -> new CategoryNotFoundException("Category not found with id " + categoryId));
+            product.setProductCategory(category);
+        }
+
+        Product updated = productRepository.save(product);
+        return productMapper.updateProductResponse(updated);
+    }
+
+
+    @Transactional
+    public CreateVariantsResponse createVariants(Long id, CreateVariantsRequest request) {
+        Product product = productRepository.findById(id).orElseThrow(
+                () -> new ProductNotFoundException("Product not found with id " + id));
+
+        ProductVariant variant = ProductVariant.builder()
+                .color(request.getColor())
+                .size(request.getSize())
+                .price(request.getPrice())
+                .product(product)
+                .build();
+        product.getProductVariants().add(variant);
+
+        var savedVariant = productVariantRepository.save(variant);
+
+        return productMapper.toCreateVariantsResponse(savedVariant);
+    }
 }
