@@ -2,14 +2,8 @@ package com.birbuket.productservice.controller;
 
 
 import com.birbuket.common.dto.ApiResponse;
-import com.birbuket.productservice.dto.category.*;
 import com.birbuket.productservice.dto.product.*;
-import com.birbuket.productservice.dto.product.variants.CreateVariantsRequest;
-import com.birbuket.productservice.dto.product.variants.CreateVariantsResponse;
-import com.birbuket.productservice.dto.product.variants.VariantSearchById;
-import com.birbuket.productservice.mapper.CategoryMapper;
-import com.birbuket.productservice.repository.CategoryRepository;
-import com.birbuket.productservice.service.ProductService;
+import com.birbuket.productservice.service.impl.ProductServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,49 +28,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductController {
 
-    private final ProductService productService;
+    private final ProductServiceImpl productService;
     private final ObjectMapper objectMapper;
     private final Validator validator;
 
-    @PostMapping(value = "/category", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Category yarat")
-    public ResponseEntity<ApiResponse<CreateCategoryResponse>> createCategory(
-            @Valid @ModelAttribute CreateCategoryRequest request) throws IOException {
-        var response = productService.createCategory(request);
-        return ResponseEntity.ok().body(ApiResponse.success(response));
-    }
-
-    @GetMapping("/category/{id}")
-    @Operation(summary = "Id-ye gore category axtar")
-    public ResponseEntity<ApiResponse<CategoryByIdResponse>> getCategoryById(
-            @PathVariable Long id) {
-        var response = productService.getCategoryById(id);
-        return ResponseEntity.ok().body(ApiResponse.success(response));
-    }
-
-    @GetMapping("/category")
-    @Operation(summary = "Category-rin hamisina bax")
-    public ResponseEntity<ApiResponse<List<CategoryByIdResponse>>> getAllCategories() {
-        var response = productService.getAllCategories();
-        return ResponseEntity.ok().body(ApiResponse.success(response));
-    }
-
-    @PatchMapping(value = "/category/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Id-ye gore category update")
-    public ResponseEntity<ApiResponse<UpdateCategoryResponse>> updateCategory(
-            @PathVariable Long id,
-            @ModelAttribute UpdateCategoryRequest request) throws IOException {
-        var response = productService.updateCategory(id, request);
-        return ResponseEntity.ok().body(ApiResponse.success(response));
-    }
-
-    @DeleteMapping("category/{id}")
-    @Operation(summary = "Id-ye gore category sil")
-    public ResponseEntity<ApiResponse<Void>> deleteCategory(
-            @PathVariable Long id) {
-        productService.deleteCategoryById(id);
-        return ResponseEntity.ok(ApiResponse.success(null));
-    }
 
     @Operation(summary = "Məhsul yarat")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -134,33 +89,4 @@ public class ProductController {
         var response = productService.updateProductResponse(id, request);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
-
-    /**
-     * Məhsul ID-si URL-də: {@code POST /api/product/{productId}/variants}
-     */
-    @PostMapping("/{productId}/variants")
-    @Operation(summary = "Məhsula ayrıca variant əlavə et (product id path-də)")
-    public ResponseEntity<ApiResponse<CreateVariantsResponse>> createVariantForProduct(
-            @PathVariable Long productId,
-            @Valid @RequestBody CreateVariantsRequest request) {
-        var response = productService.createVariants(productId, request);
-        return ResponseEntity.ok().body(ApiResponse.success(response));
-    }
-
-    @PostMapping("/variant/{id}")
-    @Operation(summary = "Yeni variant (köhnə path: product id = {id})")
-    public ResponseEntity<ApiResponse<CreateVariantsResponse>> createVariant(
-            @PathVariable Long id,
-            @Valid @RequestBody CreateVariantsRequest request) {
-        var response = productService.createVariants(id, request);
-        return ResponseEntity.ok().body(ApiResponse.success(response));
-    }
-
-   @GetMapping("/variant/{id}")
-   @Operation(summary = "Id-ye gore variant axtarisi")
-   public ResponseEntity<ApiResponse<VariantSearchById>> getVariantById(
-           @PathVariable Long id){
-        var response = productService.getVariantById(id);
-        return ResponseEntity.ok().body(ApiResponse.success(response));
-   }
 }

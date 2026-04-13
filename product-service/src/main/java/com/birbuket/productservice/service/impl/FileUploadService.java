@@ -1,4 +1,4 @@
-package com.birbuket.productservice.service;
+package com.birbuket.productservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
