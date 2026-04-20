@@ -32,7 +32,7 @@ public class SecurityConfig {
                                         "/webjars/**"
                                 ).permitAll()
                                 .requestMatchers("/uploads/**").permitAll()
-                                .requestMatchers("/api/product/category/**").permitAll()
+                                .requestMatchers("/api/category/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/product", "/api/product/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/product/**").permitAll()
                                 .requestMatchers(HttpMethod.DELETE, "/api/product/**").permitAll()

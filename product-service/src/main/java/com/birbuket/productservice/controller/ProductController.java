@@ -7,10 +7,15 @@ import com.birbuket.productservice.service.impl.ProductServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -58,18 +63,20 @@ public class ProductController {
         return request;
     }
 
-    @GetMapping({"{id}"})
-    @Operation(summary = "Id-ye gore product axtar")
-    public ResponseEntity<ApiResponse<ProductByIdResponse>> getProductById(
-            @PathVariable Long id) {
-        var response = productService.getProductById(id);
+    @GetMapping({"/{slug}"})
+    @Operation(summary = "Slug-a gore product axtar")
+    public ResponseEntity<ApiResponse<ProductByIdResponse>> getProductBySlug(
+            @PathVariable String slug) {
+        var response = productService.getProductBySlug(slug);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 
     @GetMapping
     @Operation(summary = "Productlar-in siyahisina bax")
-    public ResponseEntity<ApiResponse<List<ProductByIdResponse>>> getAllProducts() {
-        var response = productService.getViewAllProducts();
+    public ResponseEntity<ApiResponse<Page<ProductByIdResponse>>> getAllProducts(
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") int page) {
+        var response = productService.getViewAllProducts(size, page);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 
@@ -87,6 +94,16 @@ public class ProductController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateProductRequest request) {
         var response = productService.updateProductResponse(id, request);
+        return ResponseEntity.ok().body(ApiResponse.success(response));
+    }
+
+    @GetMapping("/category/{id}/product")
+    @Operation(summary = "Product-ra category-ye gore baxmaq")
+    public ResponseEntity<ApiResponse<Page<ProductByCategoryResponse>>> getAllProductsByCategory(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") int page) {
+        var response = productService.getProductByCategoryId(id,size, page);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 }

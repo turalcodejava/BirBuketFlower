@@ -20,7 +20,7 @@ import java.util.List;
 public class ProductCategoryController {
     private final ProductCategoryService productCategoryService;
 
-    @PostMapping(value = "/category", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Category yarat")
     public ResponseEntity<ApiResponse<CreateCategoryResponse>> createCategory(
             @Valid @ModelAttribute CreateCategoryRequest request) throws IOException {
@@ -28,7 +28,7 @@ public class ProductCategoryController {
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 
-    @GetMapping("/category/{id}")
+    @GetMapping("/{id}")
     @Operation(summary = "Id-ye gore category axtar")
     public ResponseEntity<ApiResponse<CategoryByIdResponse>> getCategoryById(
             @PathVariable Long id) {
@@ -36,14 +36,14 @@ public class ProductCategoryController {
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 
-    @GetMapping("/category")
+    @GetMapping
     @Operation(summary = "Category-rin hamisina bax")
     public ResponseEntity<ApiResponse<List<CategoryByIdResponse>>> getAllCategories() {
         var response = productCategoryService.getAllCategories();
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 
-    @PatchMapping(value = "/category/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PatchMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Id-ye gore category update")
     public ResponseEntity<ApiResponse<UpdateCategoryResponse>> updateCategory(
             @PathVariable Long id,
@@ -52,7 +52,7 @@ public class ProductCategoryController {
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 
-    @DeleteMapping("category/{id}")
+    @DeleteMapping("/{id}")
     @Operation(summary = "Id-ye gore category sil")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(
             @PathVariable Long id) {

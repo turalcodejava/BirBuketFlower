@@ -2,18 +2,21 @@ package com.birbuket.productservice.service.impl;
 
 import com.birbuket.productservice.dto.product.*;
 import com.birbuket.productservice.exception.*;
-import com.birbuket.productservice.mapper.CategoryMapper;
 import com.birbuket.productservice.mapper.ProductMapper;
 import com.birbuket.productservice.models.Product;
 import com.birbuket.productservice.models.ProductCategory;
 import com.birbuket.productservice.models.ProductImage;
 import com.birbuket.productservice.models.ProductVariant;
 import com.birbuket.productservice.repository.CategoryRepository;
-import com.birbuket.productservice.repository.ProductImageRepository;
 import com.birbuket.productservice.repository.ProductRepository;
-import com.birbuket.productservice.repository.ProductVariantRepository;
 import com.birbuket.productservice.service.ProductService;
+import com.birbuket.productservice.util.SkuGenerator;
+import com.birbuket.productservice.util.SlugGenerator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,19 +27,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
-    private final CategoryMapper categoryMapper;
     private final CategoryRepository categoryRepository;
     private final FileUploadService fileUploadService;
     private final ProductMapper productMapper;
     private final ProductRepository productRepository;
-    private final ProductImageRepository productImageRepository;
-    private final ProductVariantRepository productVariantRepository;
-
-
 
 
     @Transactional
@@ -52,8 +51,6 @@ public class ProductServiceImpl implements ProductService {
                 .productName(request.getProductName())
                 .description(request.getDescription())
                 .composition(request.getComposition())
-                .slug(request.getSlug())
-                .sku(request.getSku())
                 .build();
 
         Long categoryId = request.getProductCategoryId();
@@ -91,41 +88,46 @@ public class ProductServiceImpl implements ProductService {
 
         product.setImages(productImages);
 
+        product.setSlug(SlugGenerator.generatorSlug(request.getProductName()));
+        product.setSku(SkuGenerator.generatorSku());
         var savedProduct = productRepository.save(product);
 
         return productMapper.toProductResponse(savedProduct);
     }
 
-
-    @Transactional(readOnly = true)
     @Override
-    public ProductByIdResponse getProductById(Long id) {
-        var product = productRepository.findById(id).orElseThrow(
-                () -> new ProductNotFoundException("Product not found with id " + id));
-        return productMapper.toProductByIdResponse(product);
+    public ProductByIdResponse getProductBySlug(String slug) {
+        Product product = productRepository.findBySlug(slug).orElseThrow(
+                () -> {
+                    log.error("Product not found with slug: {}", slug);
+                    return new ProductNotFoundException("Product not found with slug " + slug);
+                }
+        );
+        return productMapper.toProductBySlugResponse(product);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public List<ProductByIdResponse> getViewAllProducts() {
-        var products = productRepository.findAll();
-        return productMapper.toALlProduct(products);
+    public Page<ProductByIdResponse> getViewAllProducts(int size, int page) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Product> products = productRepository.findAll(pageable);
+        return products.map(productMapper::toProductBySlugResponse);
     }
 
     @Transactional
     @Override
-    public void deleteProduct(Long id){
+    public void deleteProduct(Long id) {
         var product = productRepository.findById(id).orElseThrow(
-                ()-> new ProductNotFoundException("Product not found with id " + id)
+                () -> new ProductNotFoundException("Product not found with id " + id)
         );
         productRepository.delete(product);
     }
 
     @Transactional
     @Override
-    public UpdateProductResponse updateProductResponse(Long id, UpdateProductRequest request){
+    public UpdateProductResponse updateProductResponse(Long id, UpdateProductRequest request) {
         var product = productRepository.findById(id).orElseThrow(
-                ()-> new ProductNotFoundException("Product not found with id" + id)
+                () -> new ProductNotFoundException("Product not found with id" + id)
         );
 
         product.setProductName(request.getProductName());
@@ -144,5 +146,14 @@ public class ProductServiceImpl implements ProductService {
 
         Product updated = productRepository.save(product);
         return productMapper.updateProductResponse(updated);
+    }
+
+    @Override
+    public Page<ProductByCategoryResponse> getProductByCategoryId(Long categoryId, int size, int page) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        var product = productRepository.findByProductCategory_Id(categoryId, pageable)
+                .map(productMapper::toProductByCategory);
+        return product;
     }
 }

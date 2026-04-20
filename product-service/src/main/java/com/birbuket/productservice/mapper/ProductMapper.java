@@ -38,7 +38,7 @@ public interface ProductMapper {
 
     ProductCategoryResponse toProductCategoryResponse(ProductCategory category);
 
-    ProductByIdResponse toProductByIdResponse(Product product);
+    ProductByIdResponse toProductBySlugResponse(Product product);
 
     List<ProductByIdResponse> toALlProduct(List<Product> products);
 
@@ -49,4 +49,6 @@ public interface ProductMapper {
 
     @Mapping(target = "productId", source = "product.id")
     VariantSearchById toVariantSeachById(ProductVariant variant);
+
+    ProductByCategoryResponse toProductByCategory(Product product);
 }
