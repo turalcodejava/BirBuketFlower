@@ -42,12 +42,6 @@ public class CreateProductRequest {
     @PositiveOrZero
     private Integer reviewCount = 0; // Review sayı (opsional, default 0)
 
-    @NotBlank(message = "Slug boş ola bilməz")
-    @Size(max = 200)
-    private String slug; // SEO / URL üçün ad
-
-    private String sku; // Məhsulun kodlaşdırılması üçün
-
     @Valid
     private List<ProductVariantRequest> productVariants;
 

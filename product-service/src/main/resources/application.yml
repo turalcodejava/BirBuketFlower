@@ -1,6 +1,14 @@
 spring:
   application:
     name: product-service
+  data:
+    web:
+      pageable:
+        default-page-size: 10
+        page-parameter: page
+        size-parameter: size
+        sort-parameter: sort
+        one-indexed-parameters: false
   servlet:
     multipart:
       enabled: true
