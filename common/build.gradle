@@ -26,3 +26,11 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
 }
+
+bootJar {
+    enabled = false
+}
+
+jar {
+    enabled = true
+}

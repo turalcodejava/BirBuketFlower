@@ -8,6 +8,7 @@ import com.birbuket.productservice.models.ProductCategory;
 import com.birbuket.productservice.repository.CategoryRepository;
 import com.birbuket.productservice.service.ProductCategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,8 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     private final CategoryMapper categoryMapper;
     private final CategoryRepository categoryRepository;
     private final FileUploadService fileUploadService;
+    @Value("${app.upload.category-folder:categories}")
+    private String categoryImageFolder;
 
     @Transactional
     @Override
@@ -31,7 +34,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
         }
         String imageUrl = null;
         if (request.getImage() != null && !request.getImage().isEmpty()) {
-            imageUrl = fileUploadService.uploadFile(request.getImage(), "categories");
+            imageUrl = fileUploadService.uploadFile(request.getImage(), categoryImageFolder);
         }
 
         var category = ProductCategory.builder()
@@ -70,7 +73,7 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
         category.setTitle(request.getTitle());
         category.setSubtitle(request.getSubtitle());
         if (request.getImage() != null && !request.getImage().isEmpty()) {
-            String imageUrl = fileUploadService.uploadFile(request.getImage(), "categories");
+            String imageUrl = fileUploadService.uploadFile(request.getImage(), categoryImageFolder);
             category.setImageUrl(imageUrl);
         }
         var saved = categoryRepository.save(category);

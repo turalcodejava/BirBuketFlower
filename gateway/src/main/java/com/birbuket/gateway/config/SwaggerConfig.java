@@ -2,6 +2,7 @@ package com.birbuket.gateway.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,6 +12,11 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class SwaggerConfig {
+    @Value("${swagger.auth-url:http://localhost:8082/swagger-ui.html}")
+    private String authSwaggerUrl;
+
+    @Value("${swagger.product-url:http://localhost:8083/swagger-ui.html}")
+    private String productSwaggerUrl;
 
     @Bean
     public OpenAPI gatewayOpenApi() {
@@ -20,7 +26,7 @@ public class SwaggerConfig {
                         .version("1.0")
                         .description(
                                 "Marşrutlar: /api/auth/** → auth-service, /api/product/** → product-service, /uploads/** → product-service. "
-                                        + "Tam Swagger: http://localhost:8082/swagger-ui.html (auth), "
-                                        + "http://localhost:8083/swagger-ui.html (product)"));
+                                        + "Tam Swagger: " + authSwaggerUrl + " (auth), "
+                                        + productSwaggerUrl + " (product)"));
     }
 }

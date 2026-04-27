@@ -3,11 +3,14 @@ package com.birbuket.authservice;
 import com.birbuket.authservice.config.KeycloakProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
-@SpringBootApplication(scanBasePackages = "com.birbuket")
+@SpringBootApplication(
+        scanBasePackages = "com.birbuket",
+        exclude = {KafkaAutoConfiguration.class})
 @EnableConfigurationProperties(KeycloakProperties.class)
 @EnableJpaAuditing
 @ComponentScan(basePackages = {

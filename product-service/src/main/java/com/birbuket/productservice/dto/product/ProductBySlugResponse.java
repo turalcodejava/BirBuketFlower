@@ -13,7 +13,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class ProductByIdResponse {
+public class ProductBySlugResponse {
     private Long id;
     private String productName;
     private String description;

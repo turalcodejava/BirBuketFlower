@@ -47,7 +47,7 @@ public class ProductCategoryController {
     @Operation(summary = "Id-ye gore category update")
     public ResponseEntity<ApiResponse<UpdateCategoryResponse>> updateCategory(
             @PathVariable Long id,
-            @ModelAttribute UpdateCategoryRequest request) throws IOException {
+            @Valid @ModelAttribute UpdateCategoryRequest request) throws IOException {
         var response = productCategoryService.updateCategory(id, request);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }

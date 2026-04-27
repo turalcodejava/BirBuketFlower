@@ -10,22 +10,27 @@ import com.birbuket.productservice.models.ProductVariant;
 import com.birbuket.productservice.repository.CategoryRepository;
 import com.birbuket.productservice.repository.ProductRepository;
 import com.birbuket.productservice.service.ProductService;
+import com.birbuket.productservice.specification.ProductSpecification;
 import com.birbuket.productservice.util.SkuGenerator;
 import com.birbuket.productservice.util.SlugGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -36,6 +41,8 @@ public class ProductServiceImpl implements ProductService {
     private final FileUploadService fileUploadService;
     private final ProductMapper productMapper;
     private final ProductRepository productRepository;
+    @Value("${app.upload.product-folder:product_image}")
+    private String productImageFolder;
 
 
     @Transactional
@@ -51,6 +58,11 @@ public class ProductServiceImpl implements ProductService {
                 .productName(request.getProductName())
                 .description(request.getDescription())
                 .composition(request.getComposition())
+                .discountPercentage(request.getDiscountPercentage())
+                .active(request.isActive())
+                .isSingle(request.isSingle())
+                .rating(request.getRating())
+                .reviewCount(request.getReviewCount())
                 .build();
 
         Long categoryId = request.getProductCategoryId();
@@ -77,7 +89,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         List<MultipartFile> imageFiles = images != null ? images : Collections.emptyList();
-        List<String> imageUrls = fileUploadService.uploadMultipartFiles(imageFiles, "product_image");
+        List<String> imageUrls = fileUploadService.uploadMultipartFiles(imageFiles, productImageFolder);
 
         List<ProductImage> productImages = imageUrls.stream()
                 .map(url -> ProductImage.builder()
@@ -95,20 +107,22 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toProductResponse(savedProduct);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public ProductByIdResponse getProductBySlug(String slug) {
-        Product product = productRepository.findBySlug(slug).orElseThrow(
-                () -> {
+    public ProductBySlugResponse getProductBySlug(String slug) {
+        String normalizedSlug = slug == null ? "" : slug.trim().toLowerCase().replace(" ", "-");
+        Product product = productRepository.findBySlug(normalizedSlug)
+                .or(() -> productRepository.findFirstBySlugStartingWith(normalizedSlug))
+                .orElseThrow(() -> {
                     log.error("Product not found with slug: {}", slug);
                     return new ProductNotFoundException("Product not found with slug " + slug);
-                }
-        );
+                });
         return productMapper.toProductBySlugResponse(product);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public Page<ProductByIdResponse> getViewAllProducts(int size, int page) {
+    public Page<ProductBySlugResponse> getViewAllProducts(int size, int page) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Product> products = productRepository.findAll(pageable);
         return products.map(productMapper::toProductBySlugResponse);
@@ -130,11 +144,36 @@ public class ProductServiceImpl implements ProductService {
                 () -> new ProductNotFoundException("Product not found with id" + id)
         );
 
-        product.setProductName(request.getProductName());
-        product.setDescription(request.getDescription());
-        product.setComposition(request.getComposition());
-        product.setSlug(request.getSlug());
-        product.setSku(request.getSku());
+        if (request.getProductName() != null) {
+            product.setProductName(request.getProductName());
+        }
+        if (request.getDescription() != null) {
+            product.setDescription(request.getDescription());
+        }
+        if (request.getComposition() != null) {
+            product.setComposition(request.getComposition());
+        }
+        if (request.getDiscountPercentage() != null) {
+            product.setDiscountPercentage(request.getDiscountPercentage());
+        }
+        if (request.getActive() != null) {
+            product.setActive(request.getActive());
+        }
+        if (request.getIsSingle() != null) {
+            product.setSingle(request.getIsSingle());
+        }
+        if (request.getRating() != null) {
+            product.setRating(request.getRating());
+        }
+        if (request.getReviewCount() != null) {
+            product.setReviewCount(request.getReviewCount());
+        }
+        if (request.getSlug() != null) {
+            product.setSlug(request.getSlug());
+        }
+        if (request.getSku() != null) {
+            product.setSku(request.getSku());
+        }
         product.setUpdatedAt(LocalDateTime.now());
 
         Long categoryId = request.getProductCategoryId();
@@ -148,12 +187,57 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.updateProductResponse(updated);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public Page<ProductByCategoryResponse> getProductByCategoryId(Long categoryId, int size, int page) {
-
+    public Page<ProductByCategoryResponse> getProductByCategory(String categoryKey, int size, int page) {
+        Long categoryId = resolveCategoryId(categoryKey);
         Pageable pageable = PageRequest.of(page, size);
-        var product = productRepository.findByProductCategory_Id(categoryId, pageable)
+        return productRepository.findByProductCategory_Id(categoryId, pageable)
                 .map(productMapper::toProductByCategory);
-        return product;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<ProductBySlugResponse> filterProducts(Long categoryId, String category, BigDecimal minPrice, BigDecimal maxPrice) {
+        if (categoryId == null && category != null && !category.isBlank()) {
+            categoryId = resolveCategoryId(category);
+            category = null;
+        }
+        Specification<Product> specification = ProductSpecification.filter(categoryId, category, minPrice, maxPrice);
+        return productRepository.findAll(specification)
+                .stream()
+                .map(productMapper::toProductBySlugResponse)
+                .toList();
+    }
+
+    private Long resolveCategoryId(String categoryKey) {
+        if (categoryKey == null || categoryKey.isBlank()) {
+            throw new CategoryNotFoundException("Category key must not be empty");
+        }
+
+        String normalizedKey = normalizeCategoryKey(categoryKey);
+
+        try {
+            return Long.valueOf(normalizedKey);
+        } catch (NumberFormatException ignored) {
+            // Continue and resolve by category title/slug.
+        }
+
+        String normalizedTitle = normalizedKey.replace("-", " ");
+
+        return categoryRepository.findFirstByTitleIgnoreCase(normalizedTitle)
+                .or(() -> categoryRepository.findAll().stream()
+                        .filter(category -> normalizeCategoryKey(category.getTitle()).equals(normalizedKey))
+                        .findFirst())
+                .map(ProductCategory::getId)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with key " + categoryKey));
+    }
+
+    private String normalizeCategoryKey(String value) {
+        return value.trim()
+                .toLowerCase(Locale.ROOT)
+                .replace("_", " ")
+                .replace("-", " ")
+                .replaceAll("\\s+", " ");
     }
 }

@@ -32,11 +32,14 @@ public class SecurityConfig {
                                         "/webjars/**"
                                 ).permitAll()
                                 .requestMatchers("/uploads/**").permitAll()
-                                .requestMatchers("/api/category/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/product", "/api/product/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/category/**", "/api/variant/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/category/**", "/api/variant/**").authenticated()
+                                .requestMatchers(HttpMethod.PATCH, "/api/category/**").authenticated()
+                                .requestMatchers(HttpMethod.DELETE, "/api/category/**").authenticated()
+                                .requestMatchers(HttpMethod.POST, "/api/product", "/api/product/**").authenticated()
                                 .requestMatchers(HttpMethod.GET, "/api/product/**").permitAll()
-                                .requestMatchers(HttpMethod.DELETE, "/api/product/**").permitAll()
-                                .requestMatchers(HttpMethod.PATCH, "/api/product/**").permitAll()
+                                .requestMatchers(HttpMethod.DELETE, "/api/product/**").authenticated()
+                                .requestMatchers(HttpMethod.PATCH, "/api/product/**").authenticated()
                                 .anyRequest().authenticated()
                 );
 

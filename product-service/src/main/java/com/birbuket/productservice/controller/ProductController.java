@@ -3,27 +3,27 @@ package com.birbuket.productservice.controller;
 
 import com.birbuket.common.dto.ApiResponse;
 import com.birbuket.productservice.dto.product.*;
-import com.birbuket.productservice.service.impl.ProductServiceImpl;
+import com.birbuket.productservice.service.ProductService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,9 +31,10 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/product")
 @RequiredArgsConstructor
+@Validated
 public class ProductController {
 
-    private final ProductServiceImpl productService;
+    private final ProductService productService;
     private final ObjectMapper objectMapper;
     private final Validator validator;
 
@@ -65,7 +66,7 @@ public class ProductController {
 
     @GetMapping({"/{slug}"})
     @Operation(summary = "Slug-a gore product axtar")
-    public ResponseEntity<ApiResponse<ProductByIdResponse>> getProductBySlug(
+    public ResponseEntity<ApiResponse<ProductBySlugResponse>> getProductBySlug(
             @PathVariable String slug) {
         var response = productService.getProductBySlug(slug);
         return ResponseEntity.ok().body(ApiResponse.success(response));
@@ -73,9 +74,9 @@ public class ProductController {
 
     @GetMapping
     @Operation(summary = "Productlar-in siyahisina bax")
-    public ResponseEntity<ApiResponse<Page<ProductByIdResponse>>> getAllProducts(
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "0") int page) {
+    public ResponseEntity<ApiResponse<Page<ProductBySlugResponse>>> getAllProducts(
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "0") @Min(0) int page) {
         var response = productService.getViewAllProducts(size, page);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
@@ -100,10 +101,21 @@ public class ProductController {
     @GetMapping("/category/{id}/product")
     @Operation(summary = "Product-ra category-ye gore baxmaq")
     public ResponseEntity<ApiResponse<Page<ProductByCategoryResponse>>> getAllProductsByCategory(
-            @PathVariable Long id,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "0") int page) {
-        var response = productService.getProductByCategoryId(id,size, page);
+            @PathVariable String id,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "0") @Min(0) int page) {
+        var response = productService.getProductByCategory(id, size, page);
+        return ResponseEntity.ok().body(ApiResponse.success(response));
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<ApiResponse<List<ProductBySlugResponse>>> filterProduct(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice
+    ){
+        var response = productService.filterProducts(categoryId, category, minPrice, maxPrice);
         return ResponseEntity.ok().body(ApiResponse.success(response));
     }
 }
