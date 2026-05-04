@@ -24,9 +24,9 @@ public class UpdateProductRequest {
     @Max(value = 100, message = "Discount 100%-dən böyük ola bilməz")
     private BigDecimal discountPercentage;  // Endirim faizi
 
-    private boolean active = true;  // Məhsul aktivliyi
+    private Boolean active;  // Məhsul aktivliyi
 
-    private boolean isSingle = false; // Tək məhsul mu, yoxsa set?
+    private Boolean isSingle; // Tək məhsul mu, yoxsa set?
 
     @DecimalMin("0.0")
     @DecimalMax("5.0")
@@ -35,7 +35,6 @@ public class UpdateProductRequest {
     @PositiveOrZero
     private Integer reviewCount = 0; // Review sayı (opsional, default 0)
 
-    @NotBlank(message = "Slug boş ola bilməz")
     @Size(max = 200)
     private String slug; // SEO / URL üçün ad
 

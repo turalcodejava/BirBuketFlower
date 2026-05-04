@@ -2,14 +2,14 @@ spring:
   application:
     name: Order Service
   datasource:
-    url: jdbc:postgresql://localhost:5432/order_db
-    username: birbuket
-    password: arxideya464
+    url: ${ORDER_DB_URL:jdbc:postgresql://localhost:5432/order_db}
+    username: ${ORDER_DB_USERNAME:birbuket}
+    password: ${ORDER_DB_PASSWORD:arxideya464}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${ORDER_JPA_DDL_AUTO:update}
+    show-sql: ${ORDER_JPA_SHOW_SQL:true}
     properties:
       hibernate:
         format_sql: true
@@ -20,4 +20,29 @@ server:
 
 product:
   service:
-    url: http://localhost:8083
+    url: ${PRODUCT_SERVICE_URL:http://localhost:8083}
+
+order:
+  delivery:
+    # Bakı daxili çatdırılma
+    local-city-fee: ${ORDER_DELIVERY_LOCAL_CITY_FEE:3.00}
+    # Region şəhərlərinə çatdırılma
+    regional-city-fee: ${ORDER_DELIVERY_REGIONAL_CITY_FEE:6.00}
+    # Uzaq rayon/qəsəbələr üçün əlavə haqq
+    remote-area-extra-fee: ${ORDER_DELIVERY_REMOTE_EXTRA_FEE:2.00}
+    # Çatdırılma üçün minimum öncədən seçilə biləcək gün sayı
+    min-days-ahead: ${ORDER_DELIVERY_MIN_DAYS_AHEAD:1}
+    # Çatdırılma üçün maksimum öncədən seçilə biləcək gün sayı
+    max-days-ahead: ${ORDER_DELIVERY_MAX_DAYS_AHEAD:7}
+
+payment:
+  epoint:
+    enabled: ${EPOINT_ENABLED:true}
+    request-url: ${EPOINT_REQUEST_URL:https://epoint.az/api/1/request}
+    public-key: ${EPOINT_PUBLIC_KEY:}
+    private-key: ${EPOINT_PRIVATE_KEY:}
+    success-redirect-url: ${EPOINT_SUCCESS_REDIRECT_URL:http://localhost:3000/payment/success}
+    error-redirect-url: ${EPOINT_ERROR_REDIRECT_URL:http://localhost:3000/payment/error}
+
+
+

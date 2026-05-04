@@ -38,9 +38,9 @@ public interface ProductMapper {
 
     ProductCategoryResponse toProductCategoryResponse(ProductCategory category);
 
-    ProductByIdResponse toProductBySlugResponse(Product product);
+    ProductBySlugResponse toProductBySlugResponse(Product product);
 
-    List<ProductByIdResponse> toALlProduct(List<Product> products);
+    List<ProductBySlugResponse> toALlProduct(List<Product> products);
 
     UpdateProductResponse updateProductResponse(Product product);
 

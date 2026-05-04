@@ -50,6 +50,7 @@ public class UserRegisterRequest {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
+    @NotNull(message = "BirthDate boş ola bilməz")
     @Past(message = "BirthDate keçmiş tarix olmalıdır")
     @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate birthDate;

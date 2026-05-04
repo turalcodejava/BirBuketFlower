@@ -1,0 +1,70 @@
+spring:
+  application:
+    name: Plant Doctor Service
+  config:
+    import: optional:file:.env[.properties],optional:file:../.env[.properties]
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+  datasource:
+    url: ${PLANTDOCTOR_DB_URL:jdbc:postgresql://localhost:5432/plantdoctor_db}
+    username: ${PLANTDOCTOR_DB_USERNAME:birbuket}
+    password: ${PLANTDOCTOR_DB_PASSWORD:arxideya464}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${PLANTDOCTOR_JPA_DDL_AUTO:update}
+    show-sql: ${PLANTDOCTOR_JPA_SHOW_SQL:true}
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          ssl:
+            trust: "${MAIL_SSL_TRUST:smtp.gmail.com}"
+          connectiontimeout: 15000
+          timeout: 15000
+          writetimeout: 15000
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLE:true}
+            # Mailpit (1025) üçün false saxlayın; Gmail 587də server STARTTLS təklif edərsə yenə işləyir
+            required: ${MAIL_STARTTLS_REQUIRED:false}
+
+server:
+  port: 8085
+
+# Yalnız lokal SMTP yoxlaması: true + POST ilə /api/plantdoctor/internal/mail-probe — prod-da söndürün
+plantdoctor:
+  mail:
+    probe-endpoint-enabled: ${PLANTDOCTOR_MAIL_PROBE_ENDPOINT:false}
+
+app:
+  upload:
+    dir: ${PLANTDOCTOR_UPLOAD_DIR:uploads}
+  public-base-url: ${PLANTDOCTOR_PUBLIC_BASE_URL:http://localhost:8085}
+  gateway-base-url: ${GATEWAY_PUBLIC_BASE_URL:http://localhost:8081}
+  auth-service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8082}
+  mail:
+    from: ${PLANTDOCTOR_MAIL_FROM:${MAIL_USERNAME:no-reply@birbuket.local}}
+  visit-pricing:
+    base-visit-fee: ${PLANTDOCTOR_BASE_VISIT_FEE:20.00}
+    free-distance-km: ${PLANTDOCTOR_FREE_DISTANCE_KM:4}
+    per-km-fee: ${PLANTDOCTOR_PER_KM_FEE:0.80}
+    office-name: ${PLANTDOCTOR_OFFICE_NAME:BirBuket Flower}
+    office-address: ${PLANTDOCTOR_OFFICE_ADDRESS:}
+    office-latitude: ${PLANTDOCTOR_OFFICE_LATITUDE:}
+    office-longitude: ${PLANTDOCTOR_OFFICE_LONGITUDE:}
+  ai:
+    provider: ${PLANTDOCTOR_AI_PROVIDER:ollama}
+    ollama:
+      url: ${OLLAMA_API_URL:http://localhost:11434/api/generate}
+      model: ${OLLAMA_MODEL:llava}

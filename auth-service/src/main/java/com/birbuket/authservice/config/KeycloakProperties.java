@@ -11,9 +11,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "keycloak")
 public class KeycloakProperties {
 
-    private String serverUrl = "http://localhost:8080";
-    private String realm = "birbuket-realm";
-    private String clientId = "auth-service";
+    private String serverUrl;
+    private String realm;
+    private String clientId;
     /** Confidential client üçün; public client-də boş ola bilər */
     private String clientSecret = "";
 

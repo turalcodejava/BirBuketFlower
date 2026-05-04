@@ -1,3 +1,12 @@
 # Lokal konfiqurasiya — git-ə commit olunmur (.gitignore)
 keycloak:
-  client-secret: W228TFjsv61rOHT4TBkNk6mvJVpb0ad2
+  client-secret: vnpAVHoUqur7A6DyHIdwQEjnnGmaLVCT
+
+# Kafka lokal aktivasiya
+app:
+  kafka:
+    enabled: true
+
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092

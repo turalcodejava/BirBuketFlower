@@ -21,7 +21,11 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpMethod;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -69,6 +73,7 @@ public class KeycloakAdminService {
             String firstName,
             String lastName,
             String phoneNumber,
+            LocalDate birthDate,
             String rawPassword) {
         String token = obtainServiceAccountToken();
         String base = keycloakProperties.getServerUrl().replaceAll("/$", "");
@@ -88,8 +93,15 @@ public class KeycloakAdminService {
         body.put("emailVerified", true);
         body.put("firstName", firstName);
         body.put("lastName", lastName);
+        Map<String, List<String>> attributes = new LinkedHashMap<>();
         if (phoneNumber != null && !phoneNumber.isBlank()) {
-            body.put("attributes", Map.of("phoneNumber", List.of(phoneNumber)));
+            attributes.put("phoneNumber", List.of(phoneNumber));
+        }
+        if (birthDate != null) {
+            attributes.put("birthDate", List.of(birthDate.toString()));
+        }
+        if (!attributes.isEmpty()) {
+            body.put("attributes", attributes);
         }
         body.put("credentials", credentials);
 
@@ -140,6 +152,119 @@ public class KeycloakAdminService {
                     "Keycloak üçün JSON hazırlana bilmədi",
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     ErrorCode.KEYCLOAK_PROVISIONING_FAILED);
+        }
+    }
+
+    /**
+     * Keycloak Admin API: əvvəl email, boşdursa username ilə axtarır.
+     * Service account yoxdursa {@link Optional#empty()}.
+     */
+    public Optional<String> findKeycloakUserIdByEmailOrUsername(String email, String username) {
+        if (provisionSkipReason().isPresent()) {
+            return Optional.empty();
+        }
+        String adminToken = obtainServiceAccountToken();
+        String base = keycloakProperties.getServerUrl().replaceAll("/$", "");
+        String realm = keycloakProperties.getRealm();
+
+        Optional<String> byEmail = findUserIdByQueryParam(base, realm, adminToken, "email", email);
+        if (byEmail.isPresent()) {
+            return byEmail;
+        }
+        if (username != null && !username.isBlank()) {
+            return findUserIdByQueryParam(base, realm, adminToken, "username", username);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Keycloak-da istifadəçi parolunu yeniləyir. Service account yoxdursa heç nə etmir.
+     */
+    public void setUserPasswordInKeycloak(String keycloakUserId, String newPassword) {
+        if (provisionSkipReason().isPresent()) {
+            log.warn("Keycloak service account yoxdur — Keycloak parolu yenilənmədi");
+            return;
+        }
+        if (keycloakUserId == null || keycloakUserId.isBlank() || newPassword == null) {
+            return;
+        }
+        String adminToken = obtainServiceAccountToken();
+        String base = keycloakProperties.getServerUrl().replaceAll("/$", "");
+        String realm = keycloakProperties.getRealm();
+        String url = base + "/admin/realms/" + realm + "/users/" + keycloakUserId + "/reset-password";
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("type", "password");
+        body.put("value", newPassword);
+        body.put("temporary", false);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        try {
+            String json = JSON.writeValueAsString(body);
+            restTemplate.exchange(
+                    url,
+                    HttpMethod.PUT,
+                    new HttpEntity<>(json, headers),
+                    Void.class);
+        } catch (HttpClientErrorException e) {
+            throw new BaseException(
+                    "Keycloak parol yenilənmədi: " + keycloakErrorDetail(e),
+                    HttpStatus.BAD_GATEWAY,
+                    ErrorCode.KEYCLOAK_PROVISIONING_FAILED);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new BaseException(
+                    "Keycloak üçün JSON hazırlana bilmədi",
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    ErrorCode.KEYCLOAK_PROVISIONING_FAILED);
+        } catch (RestClientException e) {
+            throw new BaseException(
+                    "Keycloak reset-password sorğusu uğursuz: " + e.getMessage(),
+                    HttpStatus.BAD_GATEWAY,
+                    ErrorCode.KEYCLOAK_PROVISIONING_FAILED);
+        }
+    }
+
+    private Optional<String> findUserIdByQueryParam(
+            String base,
+            String realm,
+            String adminToken,
+            String paramName,
+            String paramValue) {
+        if (paramValue == null || paramValue.isBlank()) {
+            return Optional.empty();
+        }
+        String url = base
+                + "/admin/realms/"
+                + realm
+                + "/users?"
+                + paramName
+                + "="
+                + URLEncoder.encode(paramValue, StandardCharsets.UTF_8)
+                + "&exact=true";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken);
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    String.class);
+            if (response.getBody() == null) {
+                return Optional.empty();
+            }
+            JsonNode array = JSON.readTree(response.getBody());
+            if (!array.isArray() || array.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(array.get(0).path("id").asText());
+        } catch (HttpClientErrorException e) {
+            log.debug("Keycloak user search failed: {} {}", e.getStatusCode(), e.getResponseBodyAsString());
+            return Optional.empty();
+        } catch (Exception e) {
+            log.debug("Keycloak user search parse error", e);
+            return Optional.empty();
         }
     }
 

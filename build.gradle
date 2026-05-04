@@ -46,6 +46,34 @@ subprojects {
     tasks.named('test') {
         useJUnitPlatform()
     }
+
+    afterEvaluate {
+        tasks.withType(org.springframework.boot.gradle.tasks.run.BootRun).configureEach { bootRun ->
+            File envFile = new File(rootProject.projectDir, '.env')
+            if (envFile.exists()) {
+                String raw = envFile.getText('UTF-8')
+                if (raw.length() > 0 && raw.codePointAt(0) == 0xFEFF) {
+                    raw = raw.substring(1)
+                }
+                raw.split(/\r?\n/).each { line ->
+                    line = line.trim()
+                    if (!line || line.startsWith('#')) {
+                        return
+                    }
+                    int idx = line.indexOf('=')
+                    if (idx <= 0) {
+                        return
+                    }
+                    String key = line.substring(0, idx).trim()
+                    String val = line.substring(idx + 1).trim()
+                    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                        val = val.substring(1, val.length() - 1)
+                    }
+                    bootRun.environment(key, val)
+                }
+            }
+        }
+    }
 }
 
 bootJar {

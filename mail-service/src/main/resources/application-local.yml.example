@@ -1,0 +1,22 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: mail-service-group
+      auto-offset-reset: earliest
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: turaalhuseynli@gmail.com
+    password: nhonehyqcdhqduzn
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  kafka:
+    password-reset-topic: auth.password-reset

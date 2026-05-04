@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: mail-service
+  config:
+    import: optional:file:.env[.properties],optional:file:../.env[.properties]
+  main:
+    web-application-type: none
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    listener:
+      missing-topics-fatal: false
+    consumer:
+      group-id: ${MAIL_KAFKA_GROUP_ID:birbuket-mail-v3}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: true
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          ssl:
+            trust: "${MAIL_SSL_TRUST:smtp.gmail.com}"
+          connectiontimeout: 15000
+          timeout: 15000
+          writetimeout: 15000
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLE:true}
+            required: ${MAIL_STARTTLS_REQUIRED:true}
+
+logging:
+  level:
+    org.apache.kafka.clients: WARN
+
+
+app:
+  kafka:
+    password-reset-topic: ${KAFKA_PASSWORD_RESET_TOPIC:auth.password-reset}
+    welcome-topic: ${KAFKA_WELCOME_TOPIC:auth.welcome-email}

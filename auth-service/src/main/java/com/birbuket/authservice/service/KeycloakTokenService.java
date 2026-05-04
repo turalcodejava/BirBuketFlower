@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
@@ -39,46 +40,40 @@ public class KeycloakTokenService {
         String url = base + "/realms/" + keycloakProperties.getRealm()
                 + "/protocol/openid-connect/token";
 
-        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("grant_type", "password");
-        form.add("client_id", keycloakProperties.getClientId());
         String secret = keycloakProperties.getClientSecret();
-        if (secret != null && !secret.isBlank()) {
-            form.add("client_secret", secret);
-        }
-        form.add("scope", "openid");
-        form.add("username", username);
-        form.add("password", password);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        boolean hasSecret = StringUtils.hasText(secret);
+        boolean triedBodySecret = false;
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(
-                    url,
-                    new HttpEntity<>(form, headers),
-                    Map.class);
-            Map<?, ?> body = response.getBody();
-            if (body == null) {
-                throw new BaseException("Keycloak cavabsı boşdur", HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED);
-            }
-            String access = (String) body.get("access_token");
-            String refresh = (String) body.get("refresh_token");
-            if (access == null) {
-                throw new BaseException("Keycloak access_token qaytarmadı", HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED);
-            }
-            return new KeycloakTokenResult(access, refresh != null ? refresh : "");
-        } catch (HttpClientErrorException e) {
-            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                String body = e.getResponseBodyAsString();
-                if (body == null || body.isBlank()) {
-                    log.warn(
-                            "Keycloak token 401, boş gövdə — URL={}, realm={}, client-id={}, client_secret göndərilib={}",
-                            url,
-                            keycloakProperties.getRealm(),
-                            keycloakProperties.getClientId(),
-                            secret != null && !secret.isBlank());
+            try {
+                return executePasswordGrant(url, username, password, true);
+            } catch (HttpClientErrorException e) {
+                // Some Keycloak client auth modes require client_secret in form body instead of basic auth.
+                if (hasSecret && e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                    log.warn("Keycloak token 401 with basic auth. Falling back to client_secret in request body.");
+                    triedBodySecret = true;
+                    return executePasswordGrant(url, username, password, false);
                 }
+                throw e;
+            }
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().is4xxClientError()) {
+                if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                    String body = e.getResponseBodyAsString();
+                    if (body == null || body.isBlank()) {
+                        log.warn(
+                                "Keycloak token 401, boş gövdə — URL={}, realm={}, client-id={}, client_secret göndərilib={}, body fallback tried={}",
+                                url,
+                                keycloakProperties.getRealm(),
+                                keycloakProperties.getClientId(),
+                                hasSecret,
+                                triedBodySecret);
+                    }
+                }
+                throw new BaseException(
+                        "İstifadəçi adı və ya şifrə yanlışdır.",
+                        HttpStatus.UNAUTHORIZED,
+                        ErrorCode.UNAUTHORIZED);
             }
             throw new BaseException(
                     "Keycloak giriş rədd edildi: " + keycloakErrorDetail(e),
@@ -97,6 +92,42 @@ public class KeycloakTokenService {
         }
     }
 
+    private KeycloakTokenResult executePasswordGrant(String url, String username, String password, boolean useBasicAuth) {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "password");
+        form.add("client_id", keycloakProperties.getClientId());
+        form.add("scope", "openid profile email phone");
+        form.add("username", username);
+        form.add("password", password);
+
+        String secret = keycloakProperties.getClientSecret();
+        boolean hasSecret = StringUtils.hasText(secret);
+        if (hasSecret && !useBasicAuth) {
+            form.add("client_secret", secret);
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        if (hasSecret && useBasicAuth) {
+            headers.setBasicAuth(keycloakProperties.getClientId(), secret);
+        }
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                url,
+                new HttpEntity<>(form, headers),
+                Map.class);
+        Map<?, ?> body = response.getBody();
+        if (body == null) {
+            throw new BaseException("Keycloak cavabsı boşdur", HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED);
+        }
+        String access = (String) body.get("access_token");
+        String refresh = (String) body.get("refresh_token");
+        if (access == null) {
+            throw new BaseException("Keycloak access_token qaytarmadı", HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED);
+        }
+        return new KeycloakTokenResult(access, refresh != null ? refresh : "");
+    }
+
     /**
      * Keycloak JSON cavabından error / error_description çıxarır (məs. invalid_grant, unauthorized_client).
      * 401 + boş gövdə: OAuth-da çox vaxt invalid_client (client_id/client_secret uyğunsuzluğu).
@@ -108,21 +139,7 @@ public class KeycloakTokenService {
                 : null;
 
         if (raw == null || raw.isBlank()) {
-            String sec = keycloakProperties.getClientSecret();
-            boolean secretSent = sec != null && !sec.isBlank();
-            StringBuilder sb = new StringBuilder(256);
-            sb.append(e.getStatusCode().value()).append(" — cavab gövdəsi boş. ");
-            sb.append(
-                    "OAuth 401 belə olanda ən çox səbəb: yanlış client_secret və ya client_id (invalid_client), "
-                            + "və ya confidential client üçün secret ümumiyyətlə göndərilmir. ");
-            sb.append("Konfiqurasiya: client-id=").append(keycloakProperties.getClientId());
-            sb.append(", client_secret=");
-            sb.append(secretSent ? "göndərilir (Keycloak Credentials ilə eyni olduğunu yoxlayın)" : "GÖNDƏRİLMİR — boşdur; KEYCLOAK_CLIENT_SECRET təyin edin");
-            sb.append(". Sonra: Direct access grants aktiv olsun; istifadəçi realm-də mövcud olsun.");
-            if (wwwAuth != null && !wwwAuth.isBlank()) {
-                sb.append(" WWW-Authenticate: ").append(wwwAuth);
-            }
-            return sb.toString();
+            return "Giriş rədd edildi (401). Keycloak client_id/client_secret və Direct Access Grants ayarlarını yoxlayın.";
         }
         try {
             JsonNode node = JSON.readTree(raw);

@@ -10,7 +10,7 @@ spring:
       routes:
           # Auth Service ucun
         - id: auth-service
-          uri: http://localhost:8082
+          uri: ${AUTH_SERVICE_URI:http://localhost:8082}
           predicates:
             - Path=/api/auth/**
           filters:
@@ -18,7 +18,7 @@ spring:
 
           # Product Service ucun (backend @RequestMapping("/api/product") — prefix silinməməlidir)
         - id: product-service
-          uri: http://localhost:8083
+          uri: ${PRODUCT_SERVICE_URI:http://localhost:8083}
           predicates:
             - Path=/api/product/**
           filters:
@@ -26,9 +26,51 @@ spring:
               args:
                 maxSize: 16MB
 
+        - id: category-service
+          uri: ${PRODUCT_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/category/**
+          filters:
+            - name: RequestSize
+              args:
+                maxSize: 16MB
+
+        - id: variant-service
+          uri: ${PRODUCT_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/variant/**
+          filters:
+            - name: RequestSize
+              args:
+                maxSize: 16MB
+
+        - id: order-service
+          uri: ${ORDER_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/api/order/**,/api/cart/**
+          filters:
+            - name: RequestSize
+              args:
+                maxSize: 16MB
+
+        - id: plantdoctor-service
+          uri: ${PLANTDOCTOR_SERVICE_URI:http://localhost:8085}
+          predicates:
+            - Path=/api/plantdoctor/**
+          filters:
+            - name: RequestSize
+              args:
+                maxSize: 16MB
+
+        # Plant doctor müraciət şəkilləri (/uploads/plantdoctor/...) — product-dan əvvəl route order vacibdir
+        - id: plantdoctor-uploads
+          uri: ${PLANTDOCTOR_SERVICE_URI:http://localhost:8085}
+          predicates:
+            - Path=/uploads/plantdoctor/**
+
         # Yüklənmiş şəkillər (məhsul cavabındakı /uploads/... URL-ləri)
         - id: product-uploads
-          uri: http://localhost:8083
+          uri: ${PRODUCT_SERVICE_URI:http://localhost:8083}
           predicates:
             - Path=/uploads/**
   security:
@@ -36,13 +78,19 @@ spring:
       client:
         registration:
           gateway-client:
-            client-id: gateway-client
-            client-secret: <secret>
+            client-id: ${GATEWAY_CLIENT_ID:gateway-client}
+            client-secret: ${GATEWAY_CLIENT_SECRET:}
             authorization-grant-type: client_credentials
             scope: openid
         provider:
           keycloak:
-            issuer-uri: http://localhost:8080/realms/birbuket-realm
+            issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/birbuket-realm}
 
 server:
   port: 8081
+
+app:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:3001

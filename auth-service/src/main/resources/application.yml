@@ -3,18 +3,18 @@ spring:
     name: auth-service
   # İstəyə bağlı: application-local.yml faylında keycloak.client-secret (git-ə commit etmə)
   config:
-    import: optional:classpath:application-local.yml
+    import: optional:classpath:application-local.yml,optional:file:.env[.properties],optional:file:../.env[.properties]
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/auth_db
-    username: birbuket
-    password: arxideya464
+    url: ${AUTH_DB_URL:jdbc:postgresql://localhost:5432/auth_db}
+    username: ${AUTH_DB_USERNAME:birbuket}
+    password: ${AUTH_DB_PASSWORD:arxideya464}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${AUTH_JPA_DDL_AUTO:update}
+    show-sql: ${AUTH_JPA_SHOW_SQL:true}
     properties:
       hibernate:
         format_sql: true
@@ -25,6 +25,9 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8080/realms/birbuket-realm
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
 
 server:
   port: 8082
@@ -43,3 +46,14 @@ keycloak:
   # Boşdursa yuxarıdakı client-id/secret service account üçün də istifadə olunur
   admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:}
   admin-client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
+
+# Şifrəni unutdum: token DB-də, link Kafka topic-inə; consumer mail göndərər
+app:
+  password-reset:
+    token-ttl-minutes: ${PWD_RESET_TTL_MINUTES:60}
+    reset-page-base-url: ${FRONTEND_RESET_BASE_URL:http://localhost:3000/reset-password}
+  kafka:
+    # Əksər halda mail üçün Kafka aktiv olmalıdır; söndürmək: KAFKA_ENABLED=false
+    enabled: ${KAFKA_ENABLED:true}
+    email-topic: ${KAFKA_PASSWORD_RESET_TOPIC:auth.password-reset}
+    welcome-topic: ${KAFKA_WELCOME_TOPIC:auth.welcome-email}

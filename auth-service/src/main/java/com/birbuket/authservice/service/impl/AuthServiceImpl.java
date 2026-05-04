@@ -2,6 +2,8 @@ package com.birbuket.authservice.service.impl;
 
 import com.birbuket.authservice.dto.UserLoginRequest;
 import com.birbuket.authservice.dto.UserLoginResponse;
+import com.birbuket.authservice.dto.UpdateUserRequest;
+import com.birbuket.authservice.dto.UpdateUserRoleRequest;
 import com.birbuket.authservice.dto.UserRegisterRequest;
 import com.birbuket.authservice.dto.UserRegisterResponse;
 import com.birbuket.authservice.enums.Role;
@@ -9,15 +11,20 @@ import com.birbuket.authservice.enums.UserStatus;
 import com.birbuket.authservice.exception.PasswordMismatchException;
 import com.birbuket.authservice.exception.UnderageUserException;
 import com.birbuket.authservice.exception.UserAlreadyExistsException;
+import com.birbuket.authservice.exception.UserNotFoundException;
 import com.birbuket.authservice.mapper.UserMapper;
 import com.birbuket.authservice.models.UserEntity;
+import com.birbuket.authservice.notification.WelcomeNotificationSender;
 import com.birbuket.authservice.repository.UserRepository;
 import com.birbuket.authservice.service.AuthService;
 import com.birbuket.authservice.service.KeycloakAdminService;
 import com.birbuket.authservice.service.KeycloakTokenService;
+import com.birbuket.common.enums.ErrorCode;
+import com.birbuket.common.exception.BaseException;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final KeycloakTokenService keycloakTokenService;
     private final KeycloakAdminService keycloakAdminService;
+    private final WelcomeNotificationSender welcomeNotificationSender;
     @Override
     @Transactional
     public UserRegisterResponse register(UserRegisterRequest request) {
@@ -56,7 +64,10 @@ public class AuthServiceImpl implements AuthService {
                         request.getName(),
                         request.getSurname(),
                         request.getPhoneNumber(),
+                        request.getBirthDate(),
                         request.getPassword()));
+        String fullName = (saved.getName() == null ? "" : saved.getName()) + " " + (saved.getSurname() == null ? "" : saved.getSurname());
+        welcomeNotificationSender.sendWelcomeEmail(saved.getEmail(), saved.getUsername(), fullName.trim());
         log.info("User registered successfully: {}", saved.getUsername());
 
         return userMapper.toUserRegisterResponse(saved);
@@ -65,21 +76,102 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public UserLoginResponse login(UserLoginRequest request) {
-        var tokens = keycloakTokenService.obtainPasswordGrant(
-                request.getUsername(),
-                request.getPassword());
+        String loginId = request.getUsername() == null ? "" : request.getUsername().trim();
+        if (loginId.isEmpty()) {
+            throw new UserNotFoundException("Username/email is required");
+        }
 
-        Role role = userRepository.findByUsername(request.getUsername())
+        UserEntity user = userRepository.findByUsername(loginId)
+                .or(() -> userRepository.findByEmailIgnoreCase(loginId))
                 .filter(u -> UserStatus.ACTIVE.equals(u.getStatus()))
-                .map(UserEntity::getRole)
-                .orElse(Role.USER);
+                .orElseThrow(() -> new UserNotFoundException("Active user not found with username/email " + loginId));
+
+        KeycloakTokenService.KeycloakTokenResult tokens;
+        try {
+            tokens = keycloakTokenService.obtainPasswordGrant(
+                    user.getUsername(),
+                    request.getPassword());
+        } catch (BaseException ex) {
+            // Legacy users can exist in DB while Keycloak user/password is missing/out-of-sync.
+            if (ex.getStatus() == HttpStatus.UNAUTHORIZED
+                    && ex.getErrorcode() == ErrorCode.UNAUTHORIZED
+                    && passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                log.warn("Login self-heal: Keycloak user/password sync for username={}", user.getUsername());
+                keycloakAdminService.findKeycloakUserIdByEmailOrUsername(user.getEmail(), user.getUsername())
+                        .ifPresentOrElse(
+                                kcId -> keycloakAdminService.setUserPasswordInKeycloak(kcId, request.getPassword()),
+                                () -> keycloakAdminService.createUser(
+                                        user.getUsername(),
+                                        user.getEmail(),
+                                        user.getName(),
+                                        user.getSurname(),
+                                        user.getPhoneNumber(),
+                                        user.getBirthDate(),
+                                        request.getPassword()));
+                tokens = keycloakTokenService.obtainPasswordGrant(user.getUsername(), request.getPassword());
+            } else {
+                throw ex;
+            }
+        }
 
         return UserLoginResponse.builder()
-                .username(request.getUsername())
-                .role(role)
+                .username(user.getUsername())
+                .role(user.getRole())
                 .accessToken(tokens.accessToken())
                 .refreshToken(tokens.refreshToken())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public UserRegisterResponse updateUser(Long id, UpdateUserRequest request) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id " + id));
+
+        validateUniqueFieldsForUpdate(id, request);
+        checkUnderage(request.getBirthDate());
+
+        user.setName(request.getName());
+        user.setSurname(request.getSurname());
+        user.setEmail(request.getEmail());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setUsername(request.getUsername());
+        user.setGender(request.getGender());
+        user.setBirthDate(request.getBirthDate());
+
+        UserEntity saved = userRepository.save(user);
+        log.info("User updated successfully: id={}, username={}", saved.getId(), saved.getUsername());
+        return userMapper.toUserRegisterResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public UserRegisterResponse updateUserRole(Long id, UpdateUserRoleRequest request) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id " + id));
+        if (request == null || request.getRole() == null) {
+            throw new IllegalArgumentException("Role is required");
+        }
+        user.setRole(request.getRole());
+        UserEntity saved = userRepository.save(user);
+        log.info("User role updated: id={}, username={}, role={}", saved.getId(), saved.getUsername(), saved.getRole());
+        return userMapper.toUserRegisterResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserRegisterResponse getUserById(Long id) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id " + id));
+        return userMapper.toUserRegisterResponse(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserRegisterResponse getUserByUsername(String username) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found with username " + username));
+        return userMapper.toUserRegisterResponse(user);
     }
 
     private void checkPasswordsMatch(UserRegisterRequest request) {
@@ -100,7 +192,22 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    private void validateUniqueFieldsForUpdate(Long userId, UpdateUserRequest request) {
+        if (userRepository.existsByUsernameAndIdNot(request.getUsername(), userId)) {
+            throw new UserAlreadyExistsException("Username already exists");
+        }
+        if (userRepository.existsByEmailAndIdNot(request.getEmail(), userId)) {
+            throw new UserAlreadyExistsException("Email already exists");
+        }
+        if (userRepository.existsByPhoneNumberAndIdNot(request.getPhoneNumber(), userId)) {
+            throw new UserAlreadyExistsException("Phone number already exists");
+        }
+    }
+
     private void checkUnderage(LocalDate date) {
+        if (date == null) {
+            throw new UnderageUserException("Birth date is required");
+        }
         if (Period.between(date, LocalDate.now()).getYears() < 18) {
             throw new UnderageUserException("The user must be over 18 years old");
         }

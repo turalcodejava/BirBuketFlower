@@ -8,5 +8,5 @@ import java.util.List;
 @Data
 public class ViewAllProducts {
 
-    List<ProductByIdResponse> products;
+    List<ProductBySlugResponse> products;
 }
